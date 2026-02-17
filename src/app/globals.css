@@ -1,26 +1,123 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-court-dark: #0a0a0f;
+  --color-court-surface: #141420;
+  --color-court-border: #1e1e30;
+  --color-court-elevated: #1a1a2e;
+
+  --color-hoop-orange: #ff6b2b;
+  --color-hoop-orange-light: #ff8f5c;
+  --color-hoop-orange-dark: #cc4400;
+
+  --color-jersey-blue: #3b82f6;
+  --color-jersey-blue-light: #60a5fa;
+  --color-jersey-blue-dark: #1d4ed8;
+
+  --color-stat-green: #22c55e;
+  --color-stat-red: #ef4444;
+  --color-stat-gold: #eab308;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --animate-score-pop: score-pop 0.5s ease-out;
+  --animate-slide-in: slide-in 0.3s ease-out;
+  --animate-fade-up: fade-up 0.4s ease-out;
+  --animate-bounce-in: bounce-in 0.6s ease-out;
+  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+
+  @keyframes score-pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  @keyframes slide-in {
+    0% { transform: translateX(-20px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+  }
+
+  @keyframes fade-up {
+    0% { transform: translateY(10px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
+  @keyframes bounce-in {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.05); }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(255, 107, 43, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(255, 107, 43, 0.6); }
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-court-dark);
+  color: #e5e7eb;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@utility card-basketball {
+  background-color: var(--color-court-surface);
+  border: 1px solid var(--color-court-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+@utility card-basketball-hover {
+  box-shadow: 0 0 15px rgba(255, 107, 43, 0.1);
+  border-color: rgba(255, 107, 43, 0.3);
+}
+
+@utility stat-number {
+  font-family: var(--font-mono), monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-hoop-orange);
+  animation: var(--animate-score-pop);
+}
+
+@utility btn-primary {
+  background-color: var(--color-hoop-orange);
+  color: white;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+@utility btn-secondary {
+  background-color: var(--color-jersey-blue);
+  color: white;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+/* Scrollbar styling for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-court-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-court-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-hoop-orange-dark);
 }
