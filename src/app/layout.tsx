@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Basketball Connect",
+  title: "Basketball Hub",
   description: "Queensland Basketball information hub - teams, players, fixtures, and stats",
 }
 
@@ -23,9 +23,17 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('basketball-hub-theme');if(t==='light'){document.documentElement.classList.remove('dark')}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-court-dark text-gray-200 antialiased`}
+        suppressHydrationWarning
       >
         {children}
       </body>

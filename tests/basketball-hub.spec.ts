@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 const BASE_URL = 'http://localhost:3001';
 
-test.describe('BasketballConnect Website Tests', () => {
+test.describe('BasketballHub Website Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(BASE_URL);
   });

@@ -56,7 +56,6 @@ describe('Schema barrel exports', () => {
   it('exports all game schemas', async () => {
     const schemas = await import('@/schemas/index')
     expect(schemas.GameSummarySchema).toBeDefined()
-    expect(schemas.ActionLogEntrySchema).toBeDefined()
     expect(schemas.ActionLogResponseSchema).toBeDefined()
     expect(schemas.GameEventSchema).toBeDefined()
     expect(schemas.GameEventsResponseSchema).toBeDefined()

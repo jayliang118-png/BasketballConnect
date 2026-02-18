@@ -1,16 +1,19 @@
 'use client'
 
 import { Card } from '@/components/common/Card'
+import { FavoriteButton } from './FavoriteButton'
 
 interface TeamCardProps {
   readonly name: string
   readonly teamId: number
   readonly playersCount?: string
   readonly organisationName?: string
+  readonly isFavorited?: boolean
+  readonly onToggleFavorite?: () => void
   readonly onClick: () => void
 }
 
-export function TeamCard({ name, playersCount, organisationName, onClick }: TeamCardProps) {
+export function TeamCard({ name, playersCount, organisationName, isFavorited, onToggleFavorite, onClick }: TeamCardProps) {
   return (
     <Card onClick={onClick} className="group">
       <div className="flex items-center gap-4">
@@ -33,6 +36,9 @@ export function TeamCard({ name, playersCount, organisationName, onClick }: Team
             )}
           </div>
         </div>
+        {onToggleFavorite && (
+          <FavoriteButton isFavorited={isFavorited ?? false} onToggle={onToggleFavorite} />
+        )}
         <svg className="w-4 h-4 text-gray-600 flex-shrink-0 group-hover:text-jersey-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>

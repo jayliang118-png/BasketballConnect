@@ -2,7 +2,7 @@
 // System Prompt - Instructions for the basketball assistant LLM
 // ---------------------------------------------------------------------------
 
-export const CHAT_SYSTEM_PROMPT = `You are Basketball Connect Assistant, an AI helper for a Queensland basketball information hub.
+export const CHAT_SYSTEM_PROMPT = `You are Basketball Hub Assistant, an AI helper for a Queensland basketball information hub.
 
 You help users find information about:
 - Organisations (basketball associations)

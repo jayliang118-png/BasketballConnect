@@ -49,7 +49,6 @@ export {
 
 export {
   GameSummarySchema,
-  ActionLogEntrySchema,
   ActionLogResponseSchema,
   GameEventSchema,
   GameEventsResponseSchema,

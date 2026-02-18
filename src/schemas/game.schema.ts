@@ -9,65 +9,126 @@
 import { z } from 'zod/v4'
 import { GuidSchema } from './common.schema'
 
-const GameSummaryPlayerSchema = z
-  .object({
-    playerId: z.number().int(),
-    firstName: z.string(),
-    lastName: z.string(),
-    points: z.number(),
-    fouls: z.number(),
-  })
-  .passthrough()
+// ---------------------------------------------------------------------------
+// gameSummary
+// ---------------------------------------------------------------------------
 
-const GameSummaryTeamSchema = z
-  .object({
-    teamId: z.number().int(),
-    teamName: z.string(),
-    score: z.number(),
-    players: z.array(GameSummaryPlayerSchema),
-  })
-  .passthrough()
+const GameSummaryPlayerSchema = z.object({
+  teamId: z.number().int(),
+  shirt: z.string(),
+  photoUrl: z.string().nullable(),
+  firstName: z.string(),
+  lastName: z.string(),
+  x: z.number().nullable(),
+  y: z.number().nullable(),
+  substitutionMinute: z.number().nullable(),
+  goals: z.array(z.unknown()),
+  cards: z.array(z.unknown()),
+})
 
-export const GameSummarySchema = z
-  .object({
-    matchId: z.number().int(),
-    competitionUniqueKey: GuidSchema,
-    team1: GameSummaryTeamSchema,
-    team2: GameSummaryTeamSchema,
-  })
-  .passthrough()
+const GameSummaryTeamInfoSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  teamUniqueKey: GuidSchema,
+  logoUrl: z.string().nullable(),
+})
 
-export const ActionLogEntrySchema = z
-  .object({
-    id: z.number().int(),
-    matchId: z.number().int(),
-    period: z.number().int(),
-    timestamp: z.string(),
-    action: z.string(),
-    playerId: z.number().int().nullable().optional(),
-    playerName: z.string().nullable().optional(),
-    teamId: z.number().int().nullable().optional(),
-    teamName: z.string().nullable().optional(),
-    points: z.number().nullable().optional(),
-  })
-  .passthrough()
+const GameSummaryMatchDataSchema = z.object({
+  team1Score: z.number(),
+  team2Score: z.number(),
+  hasPenalty: z.boolean(),
+  team1PenaltyScore: z.number().nullable(),
+  team2PenaltyScore: z.number().nullable(),
+  startTime: z.string(),
+  competitionName: z.string(),
+  venueName: z.string().nullable(),
+  venueCourtName: z.string().nullable(),
+  matchStatus: z.string(),
+  substitutionEnabled: z.boolean(),
+})
 
-export const ActionLogResponseSchema = z.array(ActionLogEntrySchema)
+export const GameSummarySchema = z.object({
+  playing: z.array(GameSummaryPlayerSchema),
+  substitutions: z.array(z.unknown()),
+  teamOfficials: z.array(z.unknown()),
+  teamData: z.object({
+    team1: GameSummaryTeamInfoSchema,
+    team2: GameSummaryTeamInfoSchema,
+  }),
+  matchData: GameSummaryMatchDataSchema,
+  attendanceAvailable: z.boolean(),
+})
 
-export const GameEventSchema = z
-  .object({
-    id: z.number().int(),
-    matchId: z.number().int(),
-    type: z.string(),
-    period: z.number().int(),
-    timestamp: z.string(),
-    playerId: z.number().int().nullable().optional(),
-    teamId: z.number().int().nullable().optional(),
-  })
-  .passthrough()
+// ---------------------------------------------------------------------------
+// actionLog
+// ---------------------------------------------------------------------------
+
+const ActionLogTeamSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  logoUrl: z.string().nullable(),
+  team1Score: z.number().optional(),
+  team2Score: z.number().optional(),
+})
+
+const ActionLogMatchSchema = z.object({
+  startTime: z.string(),
+  type: z.string(),
+  id: z.number().int(),
+  team1Score: z.number(),
+  team2Score: z.number(),
+  hasPenalty: z.number(),
+  team1PenaltyScore: z.number().nullable(),
+  team2PenaltyScore: z.number().nullable(),
+  team1: ActionLogTeamSchema,
+  team2: ActionLogTeamSchema,
+})
+
+export const ActionLogResponseSchema = z.object({
+  name: z.string(),
+  message: z.string(),
+  result: z.array(ActionLogMatchSchema),
+})
+
+// ---------------------------------------------------------------------------
+// events
+// ---------------------------------------------------------------------------
+
+const GameEventPeriodSchema = z.object({
+  id: z.number().int(),
+  isExtraTime: z.boolean(),
+  isPenalty: z.boolean(),
+})
+
+const GameEventStatSchema = z.object({
+  displayName: z.string(),
+  type: z.string(),
+})
+
+const GameEventPlayerSchema = z.object({
+  name: z.string(),
+  shirt: z.string(),
+  playing: z.boolean(),
+  position: z.object({
+    shortName: z.string().nullable(),
+  }),
+  isInjured: z.boolean(),
+})
+
+export const GameEventSchema = z.object({
+  timestamp: z.number(),
+  minute: z.number(),
+  addedMinute: z.number(),
+  teamId: z.number().int(),
+  period: GameEventPeriodSchema,
+  type: z.string(),
+  score: z.string().nullable(),
+  stat: GameEventStatSchema,
+  players: z.array(GameEventPlayerSchema),
+})
 
 export const GameEventsResponseSchema = z.array(GameEventSchema)
 
 export type GameSummarySchemaType = z.infer<typeof GameSummarySchema>
-export type ActionLogEntrySchemaType = z.infer<typeof ActionLogEntrySchema>
+export type ActionLogResponseSchemaType = z.infer<typeof ActionLogResponseSchema>
 export type GameEventSchemaType = z.infer<typeof GameEventSchema>

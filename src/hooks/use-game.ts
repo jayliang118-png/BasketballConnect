@@ -2,17 +2,18 @@
 
 import { useMemo } from 'react'
 import { useApiData, type UseApiDataResult } from './use-api-data'
+import type { GameSummary, ActionLogResponse, GameEvent } from '@/types/game'
 
 export function useGameSummary(
   matchId: number | null,
   competitionUniqueKey: string | null
-): UseApiDataResult<Record<string, unknown>> {
+): UseApiDataResult<GameSummary> {
   const fetcher = useMemo(
     () =>
       matchId && competitionUniqueKey
         ? async () => {
             const { fetchGameSummary } = await import('@/services/game.service')
-            return fetchGameSummary(matchId, competitionUniqueKey) as Promise<Record<string, unknown>>
+            return fetchGameSummary(matchId, competitionUniqueKey) as Promise<GameSummary>
           }
         : null,
     [matchId, competitionUniqueKey]
@@ -24,13 +25,13 @@ export function useGameSummary(
 export function useActionLog(
   matchId: number | null,
   competitionId: string | null
-): UseApiDataResult<Record<string, unknown>> {
+): UseApiDataResult<ActionLogResponse> {
   const fetcher = useMemo(
     () =>
       matchId && competitionId
         ? async () => {
             const { fetchActionLog } = await import('@/services/game.service')
-            return fetchActionLog(matchId, competitionId) as Promise<Record<string, unknown>>
+            return fetchActionLog(matchId, competitionId) as Promise<ActionLogResponse>
           }
         : null,
     [matchId, competitionId]
@@ -41,13 +42,13 @@ export function useActionLog(
 
 export function useGameEvents(
   matchId: number | null
-): UseApiDataResult<Record<string, unknown>> {
+): UseApiDataResult<readonly GameEvent[]> {
   const fetcher = useMemo(
     () =>
       matchId
         ? async () => {
             const { fetchGameEvents } = await import('@/services/game.service')
-            return fetchGameEvents(matchId) as Promise<Record<string, unknown>>
+            return fetchGameEvents(matchId) as Promise<readonly GameEvent[]>
           }
         : null,
     [matchId]

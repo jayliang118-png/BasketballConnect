@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Pure utility functions for the Basketball Connect app
+// Pure utility functions for the Basketball Hub app
 // ---------------------------------------------------------------------------
 
 /**

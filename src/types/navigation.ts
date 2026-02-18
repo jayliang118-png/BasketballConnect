@@ -1,5 +1,5 @@
 /**
- * Navigation types for the Basketball Connect web app UI.
+ * Navigation types for the Basketball Hub web app UI.
  */
 
 export type ViewType =
@@ -38,6 +38,7 @@ export interface NavigationContextValue {
   readonly navigateToBreadcrumb: (index: number) => void
   readonly goBack: () => void
   readonly reset: () => void
+  readonly restoreState: (navState: NavigationState) => void
 }
 
 export const INITIAL_NAVIGATION_STATE: NavigationState = {

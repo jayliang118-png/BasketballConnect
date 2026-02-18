@@ -65,9 +65,13 @@ export function NavigationProvider({ children }: NavigationProviderProps) {
     setState(INITIAL_NAVIGATION_STATE)
   }, [])
 
+  const restoreState = useCallback((navState: NavigationState) => {
+    setState(navState)
+  }, [])
+
   const value = useMemo<NavigationContextValue>(
-    () => ({ state, navigateTo, navigateToBreadcrumb, goBack, reset }),
-    [state, navigateTo, navigateToBreadcrumb, goBack, reset]
+    () => ({ state, navigateTo, navigateToBreadcrumb, goBack, reset, restoreState }),
+    [state, navigateTo, navigateToBreadcrumb, goBack, reset, restoreState]
   )
 
   return (

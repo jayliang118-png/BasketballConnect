@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@theme inline {
+@theme {
   --color-court-dark: #0a0a0f;
   --color-court-surface: #141420;
   --color-court-border: #1e1e30;
@@ -58,17 +58,42 @@
 
 body {
   background: var(--color-court-dark);
-  color: #e5e7eb;
+  color: var(--color-body-text, #e5e7eb);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Light theme overrides — court colors */
+:root:not(.dark) {
+  --color-court-dark: #f8f9fa;
+  --color-court-surface: #ffffff;
+  --color-court-border: #e2e8f0;
+  --color-court-elevated: #f1f5f9;
+
+  --color-body-text: #1f2937;
+
+  --color-card-shadow: rgba(0, 0, 0, 0.08);
+
+  /* Invert gray semantic scale for light mode */
+  --color-gray-100: #1f2937;
+  --color-gray-200: #374151;
+  --color-gray-300: #4b5563;
+  --color-gray-400: #6b7280;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #9ca3af;
+}
+
+/* Dark theme body text */
+:root.dark {
+  --color-body-text: #e5e7eb;
 }
 
 @utility card-basketball {
   background-color: var(--color-court-surface);
   border: 1px solid var(--color-court-border);
   border-radius: 0.75rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 15px -3px var(--color-card-shadow, rgba(0, 0, 0, 0.3));
   transition: all 0.3s ease;
 }
 
@@ -103,7 +128,7 @@ body {
   transition: background-color 0.2s ease;
 }
 
-/* Scrollbar styling for dark theme */
+/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

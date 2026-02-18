@@ -18,8 +18,7 @@ export function GameDetail() {
   const [activeTab, setActiveTab] = useState<GameTabType>('summary')
   const { state } = useNavigation()
   const matchId = state.params.matchId as number | undefined
-  const competitionUniqueKey = state.params.competitionUniqueKey as string | undefined
-  const competitionKey = state.params.competitionKey as string | undefined
+  const competitionUniqueKey = (state.params.competitionUniqueKey ?? state.params.competitionKey) as string | undefined
 
   const handleTabChange = useCallback((tab: GameTabType) => {
     setActiveTab(tab)
@@ -56,7 +55,7 @@ export function GameDetail() {
           <GameSummary matchId={matchId ?? null} competitionUniqueKey={competitionUniqueKey ?? null} />
         )}
         {activeTab === 'playbyplay' && (
-          <ActionLog matchId={matchId ?? null} competitionId={competitionKey ?? null} />
+          <ActionLog matchId={matchId ?? null} competitionId={competitionUniqueKey ?? null} />
         )}
         {activeTab === 'events' && (
           <GameEvents matchId={matchId ?? null} />

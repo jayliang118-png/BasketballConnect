@@ -1,6 +1,8 @@
 'use client'
 
 import { SearchInput } from '@/components/common/SearchInput'
+import { ThemeToggle } from '@/components/layout/ThemeToggle'
+import { FavoritesHeaderButton } from '@/components/favorites/FavoritesHeaderButton'
 import { useNavigation } from '@/hooks/use-navigation'
 import { useSearch } from '@/hooks/use-search'
 import { useCallback, useEffect, useRef } from 'react'
@@ -41,7 +43,7 @@ export function Header() {
           </div>
           <div className="hidden sm:block">
             <h1 className="text-lg font-bold text-gray-100 tracking-tight">
-              BASKETBALL <span className="text-hoop-orange">CONNECT</span>
+              BASKETBALL <span className="text-hoop-orange">HUB</span>
             </h1>
             <p className="text-[10px] text-gray-500 uppercase tracking-widest">
               Queensland Basketball Hub
@@ -49,13 +51,17 @@ export function Header() {
           </div>
         </button>
 
-        {/* Search */}
-        <div className="w-full max-w-md">
-          <SearchInput
-            placeholder="Search teams, players, competitions..."
-            onSearch={setSearchTerm}
-            externalValue={searchTerm}
-          />
+        {/* Search & Favorites */}
+        <div className="flex items-center gap-3 flex-1 justify-end">
+          <div className="w-full max-w-md">
+            <SearchInput
+              placeholder="Search teams, players, competitions..."
+              onSearch={setSearchTerm}
+              externalValue={searchTerm}
+            />
+          </div>
+          <ThemeToggle />
+          <FavoritesHeaderButton />
         </div>
       </div>
     </header>

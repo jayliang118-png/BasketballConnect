@@ -3,55 +3,63 @@
 import { useCallback, useMemo } from 'react'
 import { useFixtures } from '@/hooks/use-fixtures'
 import { useNavigation } from '@/hooks/use-navigation'
-import { RoundAccordion } from './RoundAccordion'
-import { MatchCard } from './MatchCard'
+import { groupRoundsByName } from '@/components/fixtures/FixtureList'
+import { RoundAccordion } from '@/components/fixtures/RoundAccordion'
+import { MatchCard } from '@/components/fixtures/MatchCard'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
 import { EmptyState } from '@/components/common/EmptyState'
 import type { Match, Round } from '@/types/fixture'
 
-export interface GroupedRound {
-  readonly name: string
-  readonly matches: readonly Match[]
+function filterRoundsByTeamId(rounds: readonly Round[], teamId: number): readonly Round[] {
+  return rounds
+    .map((round) => ({
+      ...round,
+      matches: round.matches.filter(
+        (match) => match.team1?.id === teamId || match.team2?.id === teamId
+      ),
+    }))
+    .filter((round) => round.matches.length > 0)
 }
 
-export function groupRoundsByName(rounds: readonly Round[]): readonly GroupedRound[] {
-  const grouped = new Map<string, Match[]>()
-  const order: string[] = []
-
-  for (const round of rounds) {
-    const name = round.name ?? 'Unknown Round'
-    const matches = (round.matches ?? []) as readonly Match[]
-
-    const existing = grouped.get(name)
-    if (existing) {
-      existing.push(...matches)
-    } else {
-      grouped.set(name, [...matches])
-      order.push(name)
-    }
-  }
-
-  return order.map((name) => ({
-    name,
-    matches: grouped.get(name) ?? [],
-  }))
+function filterRoundsByTeamName(rounds: readonly Round[], teamName: string): readonly Round[] {
+  const lower = teamName.toLowerCase()
+  return rounds
+    .map((round) => ({
+      ...round,
+      matches: round.matches.filter(
+        (match) =>
+          match.team1?.name?.toLowerCase().includes(lower) ||
+          match.team2?.name?.toLowerCase().includes(lower)
+      ),
+    }))
+    .filter((round) => round.matches.length > 0)
 }
 
-export function FixtureList() {
+export function TeamFixtures() {
   const { state, navigateTo } = useNavigation()
   const competitionId = state.params.competitionId as number | undefined
   const divisionId = state.params.divisionId as number | undefined
+  const teamId = state.params.teamId as number | undefined
+  const teamName = state.params.teamName as string | undefined
+
+  const hasDivisionContext = competitionId !== undefined && divisionId !== undefined
 
   const { data, isLoading, error, refetch } = useFixtures(
     competitionId ?? null,
     divisionId ?? null
   )
 
-  const groupedRounds = useMemo(
-    () => (data && Array.isArray(data) ? groupRoundsByName(data) : []),
-    [data]
-  )
+  const groupedRounds = useMemo(() => {
+    if (!data || !Array.isArray(data)) return []
+    if (teamId) {
+      return groupRoundsByName(filterRoundsByTeamId(data, teamId))
+    }
+    if (teamName) {
+      return groupRoundsByName(filterRoundsByTeamName(data, teamName))
+    }
+    return []
+  }, [data, teamId, teamName])
 
   const handleMatchClick = useCallback(
     (match: Match) => {
@@ -68,9 +76,15 @@ export function FixtureList() {
     [navigateTo, state.params]
   )
 
+  if (!hasDivisionContext) {
+    return (
+      <EmptyState message="Navigate to this team through a division to view fixtures" />
+    )
+  }
+
   if (isLoading) return <LoadingSpinner message="Loading fixtures..." />
   if (error) return <ErrorMessage message={error} onRetry={refetch} />
-  if (groupedRounds.length === 0) return <EmptyState message="No fixtures found" />
+  if (groupedRounds.length === 0) return <EmptyState message="No fixtures found for this team" />
 
   return (
     <div className="space-y-3">

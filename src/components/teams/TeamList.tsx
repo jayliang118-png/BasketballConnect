@@ -4,6 +4,7 @@ import { useCallback } from 'react'
 import { useTeams } from '@/hooks/use-teams'
 import { useNavigation } from '@/hooks/use-navigation'
 import { useSearch } from '@/hooks/use-search'
+import { useFavorites } from '@/hooks/use-favorites'
 import { TeamCard } from './TeamCard'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
@@ -21,13 +22,16 @@ export function TeamList() {
     organisationUniqueKey ?? null
   )
   const { filterItems } = useSearch()
+  const { isFavorite, toggleFavorite } = useFavorites()
 
   const handleTeamClick = useCallback(
-    (team: { readonly id: number; readonly name: string }) => {
+    (team: { readonly id: number; readonly name: string; readonly [key: string]: unknown }) => {
+      const favoriteKey = (team.teamUniqueKey as string | undefined) ?? `team-${team.id}`
       navigateTo('teamDetail', {
         ...state.params,
         teamId: team.id,
         teamName: team.name,
+        teamUniqueKey: favoriteKey,
       }, team.name)
     },
     [navigateTo, state.params]
@@ -45,16 +49,36 @@ export function TeamList() {
         <EmptyState message="No teams match your search" icon="search" />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filtered.map((team) => (
-            <TeamCard
-              key={team.id}
-              name={team.name}
-              teamId={team.id}
-              playersCount={team.playersCount as string | undefined}
-              organisationName={(team.linkedCompetitionOrganisation as Record<string, unknown> | undefined)?.name as string | undefined}
-              onClick={() => handleTeamClick(team)}
-            />
-          ))}
+          {filtered.map((team) => {
+            const favoriteKey = (team.teamUniqueKey as string | undefined) ?? `team-${team.id}`
+            const detailParams = {
+              ...state.params,
+              teamId: team.id,
+              teamName: team.name,
+              teamUniqueKey: favoriteKey,
+            }
+            const detailBreadcrumbs = [
+              ...state.breadcrumbs,
+              { label: team.name, view: 'teamDetail' as const, params: detailParams },
+            ]
+            return (
+              <TeamCard
+                key={team.id}
+                name={team.name}
+                teamId={team.id}
+                playersCount={team.playersCount as string | undefined}
+                organisationName={(team.linkedCompetitionOrganisation as Record<string, unknown> | undefined)?.name as string | undefined}
+                isFavorited={isFavorite(favoriteKey)}
+                onToggleFavorite={() => toggleFavorite({
+                  teamUniqueKey: favoriteKey,
+                  name: team.name,
+                  breadcrumbs: detailBreadcrumbs,
+                  params: detailParams,
+                })}
+                onClick={() => handleTeamClick(team)}
+              />
+            )
+          })}
         </div>
       )}
     </div>

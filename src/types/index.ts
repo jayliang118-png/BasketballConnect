@@ -25,9 +25,15 @@ export type { MatchTeam, Match, Round } from './fixture'
 
 export type {
   GameSummaryPlayer,
-  GameSummaryTeam,
+  GameSummaryTeamInfo,
+  GameSummaryMatchData,
   GameSummary,
-  ActionLogEntry,
+  ActionLogTeam,
+  ActionLogMatch,
+  ActionLogResponse,
+  GameEventPeriod,
+  GameEventStat,
+  GameEventPlayer,
   GameEvent,
 } from './game'
 
