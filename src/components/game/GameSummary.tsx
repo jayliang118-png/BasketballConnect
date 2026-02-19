@@ -1,7 +1,8 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useGameSummary } from '@/hooks/use-game'
+import { useNavigation } from '@/hooks/use-navigation'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -37,13 +38,42 @@ function getStatusLabel(status: string): string {
   }
 }
 
+type UserIdLookup = ReadonlyMap<string, number>
+
+function buildNameKey(firstName: string, lastName: string): string {
+  return `${firstName.trim().toLowerCase()}|${lastName.trim().toLowerCase()}`
+}
+
 interface PlayerRowProps {
   readonly player: GameSummaryPlayer
   readonly index: number
+  readonly userIdLookup: UserIdLookup
+  readonly onPlayerClick: (userId: number, firstName: string, lastName: string) => void
 }
 
-function PlayerRow({ player, index }: PlayerRowProps) {
-  const name = `${player.firstName} ${player.lastName}`.trim() || `Player ${index + 1}`
+function PlayerRow({ player, index, userIdLookup, onPlayerClick }: PlayerRowProps) {
+  const firstName = player.firstName ?? ''
+  const lastName = player.lastName ?? ''
+  const name = `${firstName} ${lastName}`.trim() || `Player ${index + 1}`
+  const nameKey = buildNameKey(firstName, lastName)
+  const userId = userIdLookup.get(nameKey)
+
+  if (userId) {
+    return (
+      <tr className="border-b border-court-border/50 hover:bg-court-elevated/50">
+        <td className="px-4 py-2 text-gray-300 font-mono text-xs w-10">{player.shirt}</td>
+        <td className="px-4 py-2">
+          <button
+            type="button"
+            onClick={() => onPlayerClick(userId, firstName, lastName)}
+            className="text-hoop-orange hover:text-hoop-orange-dark hover:underline transition-colors text-left"
+          >
+            {name}
+          </button>
+        </td>
+      </tr>
+    )
+  }
 
   return (
     <tr className="border-b border-court-border/50 hover:bg-court-elevated/50">
@@ -57,9 +87,11 @@ interface TeamRosterTableProps {
   readonly teamName: string
   readonly players: readonly GameSummaryPlayer[]
   readonly color: 'hoop-orange' | 'jersey-blue'
+  readonly userIdLookup: UserIdLookup
+  readonly onPlayerClick: (userId: number, firstName: string, lastName: string) => void
 }
 
-function TeamRosterTable({ teamName, players, color }: TeamRosterTableProps) {
+function TeamRosterTable({ teamName, players, color, userIdLookup, onPlayerClick }: TeamRosterTableProps) {
   return (
     <div className="card-basketball overflow-hidden">
       <div className="px-4 py-3 border-b border-court-border">
@@ -75,7 +107,13 @@ function TeamRosterTable({ teamName, players, color }: TeamRosterTableProps) {
           </thead>
           <tbody>
             {players.map((player, idx) => (
-              <PlayerRow key={idx} player={player} index={idx} />
+              <PlayerRow
+                key={idx}
+                player={player}
+                index={idx}
+                userIdLookup={userIdLookup}
+                onPlayerClick={onPlayerClick}
+              />
             ))}
           </tbody>
         </table>
@@ -100,13 +138,95 @@ function buildTeamRosters(data: GameSummaryType) {
   return { team1Players, team2Players }
 }
 
+/**
+ * Fetches team rosters for both teams and builds a name→userId lookup map.
+ * Uses the team detail API which returns participants with user.id (userId).
+ */
+function useUserIdLookup(
+  team1Key: string | null,
+  team2Key: string | null,
+): UserIdLookup {
+  const [lookup, setLookup] = useState<UserIdLookup>(new Map())
+
+  useEffect(() => {
+    if (!team1Key && !team2Key) return
+
+    const controller = new AbortController()
+
+    async function fetchRosters() {
+      const { fetchTeamDetail } = await import('@/services/team.service')
+      const results = new Map<string, number>()
+
+      const keys = [team1Key, team2Key].filter(Boolean) as string[]
+
+      for (const key of keys) {
+        if (controller.signal.aborted) return
+        try {
+          const raw = await fetchTeamDetail(key) as Record<string, unknown>
+          const participants = (raw.participants ?? raw.players) as readonly Record<string, unknown>[] | undefined
+          if (!participants) continue
+
+          for (const p of participants) {
+            const user = p.user as Record<string, unknown> | undefined
+            if (user) {
+              const id = user.id as number | undefined
+              const firstName = (user.firstName as string) ?? ''
+              const lastName = (user.lastName as string) ?? ''
+              if (id && (firstName || lastName)) {
+                results.set(buildNameKey(firstName, lastName), id)
+              }
+            } else {
+              // Fallback: check for playerId/firstName/lastName directly
+              const id = (p.playerId ?? p.id) as number | undefined
+              const firstName = (p.firstName as string) ?? ''
+              const lastName = (p.lastName as string) ?? ''
+              if (id && (firstName || lastName)) {
+                results.set(buildNameKey(firstName, lastName), id)
+              }
+            }
+          }
+        } catch {
+          // Silently skip failed roster fetches
+        }
+      }
+
+      if (!controller.signal.aborted) {
+        setLookup(results)
+      }
+    }
+
+    fetchRosters()
+
+    return () => {
+      controller.abort()
+    }
+  }, [team1Key, team2Key])
+
+  return lookup
+}
+
 export function GameSummary({ matchId, competitionUniqueKey }: GameSummaryProps) {
   const { data, isLoading, error, refetch } = useGameSummary(matchId, competitionUniqueKey)
+  const { navigateTo, state } = useNavigation()
 
   const rosters = useMemo(() => {
     if (!data) return null
     return buildTeamRosters(data)
   }, [data])
+
+  const team1Key = data?.teamData?.team1?.teamUniqueKey ?? null
+  const team2Key = data?.teamData?.team2?.teamUniqueKey ?? null
+  const userIdLookup = useUserIdLookup(team1Key, team2Key)
+
+  const handlePlayerClick = useCallback(
+    (userId: number, firstName: string, lastName: string) => {
+      navigateTo('playerProfile', {
+        ...state.params,
+        userId,
+      }, `${firstName} ${lastName}`)
+    },
+    [navigateTo, state.params],
+  )
 
   if (isLoading) return <LoadingSpinner message="Loading game summary..." />
   if (error) return <ErrorMessage message={error} onRetry={refetch} />
@@ -153,12 +273,28 @@ export function GameSummary({ matchId, competitionUniqueKey }: GameSummaryProps)
         </div>
       </div>
 
-      {/* Team rosters */}
-      {rosters && rosters.team1Players.length > 0 && (
-        <TeamRosterTable teamName={team1.name} players={rosters.team1Players} color="hoop-orange" />
-      )}
-      {rosters && rosters.team2Players.length > 0 && (
-        <TeamRosterTable teamName={team2.name} players={rosters.team2Players} color="jersey-blue" />
+      {/* Team rosters — side by side */}
+      {rosters && (rosters.team1Players.length > 0 || rosters.team2Players.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {rosters.team1Players.length > 0 && (
+            <TeamRosterTable
+              teamName={team1.name}
+              players={rosters.team1Players}
+              color="hoop-orange"
+              userIdLookup={userIdLookup}
+              onPlayerClick={handlePlayerClick}
+            />
+          )}
+          {rosters.team2Players.length > 0 && (
+            <TeamRosterTable
+              teamName={team2.name}
+              players={rosters.team2Players}
+              color="jersey-blue"
+              userIdLookup={userIdLookup}
+              onPlayerClick={handlePlayerClick}
+            />
+          )}
+        </div>
       )}
     </div>
   )

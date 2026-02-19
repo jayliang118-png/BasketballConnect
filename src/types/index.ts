@@ -57,3 +57,10 @@ export type {
   ChatApiRequest,
   ChatApiResponse,
 } from './chat'
+
+export type {
+  SearchableEntityType,
+  SearchableEntity,
+  SearchResultGroup,
+  GlobalSearchIndexValue,
+} from './global-search'

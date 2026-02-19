@@ -4,12 +4,14 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTeamDetail } from '@/hooks/use-teams'
 import { useNavigation } from '@/hooks/use-navigation'
 import { useFavorites } from '@/hooks/use-favorites'
+import { useGlobalSearchIndex } from '@/hooks/use-global-search-index'
 import { FavoriteButton } from './FavoriteButton'
 import { TeamFixtures } from './TeamFixtures'
 import { Card } from '@/components/common/Card'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
 import { EmptyState } from '@/components/common/EmptyState'
+import type { SearchableEntity } from '@/types/global-search'
 
 type TeamTab = 'fixtures' | 'roster'
 
@@ -134,6 +136,41 @@ export function TeamRoster() {
   // Only fetch detail when we have a real GUID (not a fallback team-<id> key)
   const isRealGuid = teamUniqueKey ? !teamUniqueKey.startsWith('team-') : false
   const { data, isLoading, error, refetch } = useTeamDetail(isRealGuid ? (teamUniqueKey ?? null) : null)
+  const { register } = useGlobalSearchIndex()
+
+  // Register players into the global search index when roster loads
+  useEffect(() => {
+    const players = data?.players
+    if (!players || players.length === 0) return
+
+    const orgLabel = state.breadcrumbs[1]?.label ?? ''
+    const compLabel = state.breadcrumbs[2]?.label ?? ''
+    const divLabel = state.breadcrumbs[3]?.label ?? ''
+    const teamLabel = state.breadcrumbs[4]?.label ?? teamName ?? ''
+    const parentLabel = [orgLabel, compLabel, divLabel, teamLabel].filter(Boolean).join(' > ')
+
+    const entities: SearchableEntity[] = players.map((player) => {
+      const fullName = `${player.firstName} ${player.lastName}`.trim()
+      const params = {
+        ...state.params,
+        playerId: player.playerId,
+      }
+      return {
+        type: 'player' as const,
+        id: String(player.playerId),
+        name: fullName,
+        parentLabel,
+        targetView: 'playerProfile' as const,
+        breadcrumbs: [
+          ...state.breadcrumbs,
+          { label: fullName, view: 'playerProfile' as const, params },
+        ],
+        params,
+      }
+    })
+
+    register(entities)
+  }, [data?.players, register, state.breadcrumbs, state.params, teamName])
 
   const handlePlayerClick = useCallback(
     (playerId: number, firstName: string, lastName: string) => {

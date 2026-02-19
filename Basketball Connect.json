@@ -618,8 +618,17 @@
               "value": "2"
             },
             {
-              "name": "competitionId",
+              "name": "competitionUniqueKey",
               "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters3_Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "f68a1ffd26dd50c0fafa1f496a92e7b674e07fb0cfab5c778c2cf47cf6f61f784f7b1981fa99c057ce5607ffba2f8c9578a18b0605ead797aee4263a4cb6a10db73a0e0afa6ed0477c77e5cf139c5e9016a55c2a85c503d07b4a62a1b340d55e07a1d220a5105edc8ba8fb5cc6d38570fad8161d02db3a81d7822e53264a89df82bc35e32b8bbbcb179defd98c3317dc7f07d2b37f2fc0c73a0e4c68f1d8ecbdd29ce4535e6747531faa42ca6a2dbabca250f41d1791d04fda2c0a3e97bc04ec7b193ac0b42910814c176ff7e0651504fb5c4694820d5c1fcb67ab6dbed0cc94"
             }
           ]
         },
@@ -632,8 +641,7 @@
         -32
       ],
       "id": "dd806f72-ecc5-49a5-8390-ebdad0e19cff",
-      "name": "ByMatch - Get SummaryScoringByUser",
-      "disabled": true
+      "name": "ByMatch - Get SummaryScoringByUser"
     },
     {
       "parameters": {
@@ -655,8 +663,17 @@
               "value": "2"
             },
             {
-              "name": "competitionId",
+              "name": "competitionUniqueKey",
               "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters3_Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "f68a1ffd26dd50c0fafa1f496a92e7b674e07fb0cfab5c778c2cf47cf6f61f784f7b1981fa99c057ce5607ffba2f8c9578a18b0605ead797aee4263a4cb6a10db73a0e0afa6ed0477c77e5cf139c5e9016a55c2a85c503d07b4a62a1b340d55e07a1d220a5105edc8ba8fb5cc6d38570fad8161d02db3a81d7822e53264a89df82bc35e32b8bbbcb179defd98c3317dc7f07d2b37f2fc0c73a0e4c68f1d8ecbdd29ce4535e6747531faa42ca6a2dbabca250f41d1791d04fda2c0a3e97bc04ec7b193ac0b42910814c176ff7e0651504fb5c4694820d5c1fcb67ab6dbed0cc94"
             }
           ]
         },
@@ -669,8 +686,7 @@
         -32
       ],
       "id": "0044d98f-437f-45e9-a70c-6e5d241719e4",
-      "name": "ByCarrer - Get SummaryScoringByUser",
-      "disabled": true
+      "name": "ByCarrer - Get SummaryScoringByUser"
     },
     {
       "parameters": {

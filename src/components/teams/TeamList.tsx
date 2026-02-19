@@ -1,14 +1,16 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useTeams } from '@/hooks/use-teams'
 import { useNavigation } from '@/hooks/use-navigation'
 import { useSearch } from '@/hooks/use-search'
 import { useFavorites } from '@/hooks/use-favorites'
+import { useGlobalSearchIndex } from '@/hooks/use-global-search-index'
 import { TeamCard } from './TeamCard'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
 import { EmptyState } from '@/components/common/EmptyState'
+import type { SearchableEntity } from '@/types/global-search'
 
 export function TeamList() {
   const { state, navigateTo } = useNavigation()
@@ -23,6 +25,40 @@ export function TeamList() {
   )
   const { filterItems } = useSearch()
   const { isFavorite, toggleFavorite } = useFavorites()
+  const { register } = useGlobalSearchIndex()
+
+  useEffect(() => {
+    if (!data || !Array.isArray(data) || data.length === 0) return
+
+    const orgLabel = state.breadcrumbs[1]?.label ?? ''
+    const compLabel = state.breadcrumbs[2]?.label ?? ''
+    const divLabel = state.breadcrumbs[3]?.label ?? ''
+    const parentLabel = [orgLabel, compLabel, divLabel].filter(Boolean).join(' > ')
+
+    const entities: SearchableEntity[] = data.map((team) => {
+      const favoriteKey = (team.teamUniqueKey as string | undefined) ?? `team-${team.id}`
+      const params = {
+        ...state.params,
+        teamId: team.id,
+        teamName: team.name,
+        teamUniqueKey: favoriteKey,
+      }
+      return {
+        type: 'team' as const,
+        id: favoriteKey,
+        name: team.name ?? '',
+        parentLabel,
+        targetView: 'teamDetail' as const,
+        breadcrumbs: [
+          ...state.breadcrumbs,
+          { label: team.name ?? '', view: 'teamDetail' as const, params },
+        ],
+        params,
+      }
+    })
+
+    register(entities)
+  }, [data, register, state.breadcrumbs, state.params])
 
   const handleTeamClick = useCallback(
     (team: { readonly id: number; readonly name: string; readonly [key: string]: unknown }) => {

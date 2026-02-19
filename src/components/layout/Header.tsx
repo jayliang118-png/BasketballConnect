@@ -1,28 +1,50 @@
 'use client'
 
 import { SearchInput } from '@/components/common/SearchInput'
+import { GlobalSearchDropdown } from '@/components/search/GlobalSearchDropdown'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
 import { FavoritesHeaderButton } from '@/components/favorites/FavoritesHeaderButton'
 import { useNavigation } from '@/hooks/use-navigation'
 import { useSearch } from '@/hooks/use-search'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export function Header() {
   const { state, reset } = useNavigation()
-  const { searchTerm, setSearchTerm } = useSearch()
+  const { setSearchTerm } = useSearch()
   const previousView = useRef(state.currentView)
+  const searchContainerRef = useRef<HTMLDivElement>(null)
+  const [globalSearchTerm, setGlobalSearchTerm] = useState('')
+  const [showDropdown, setShowDropdown] = useState(false)
 
   useEffect(() => {
     if (state.currentView !== previousView.current) {
       previousView.current = state.currentView
+      setGlobalSearchTerm('')
       setSearchTerm('')
+      setShowDropdown(false)
     }
   }, [state.currentView, setSearchTerm])
 
   const handleLogoClick = useCallback(() => {
+    setGlobalSearchTerm('')
     setSearchTerm('')
+    setShowDropdown(false)
     reset()
   }, [reset, setSearchTerm])
+
+  const handleSearch = useCallback(
+    (term: string) => {
+      setGlobalSearchTerm(term)
+      setShowDropdown(term.trim().length > 0)
+      // Clear local page filter when global search is active
+      setSearchTerm('')
+    },
+    [setSearchTerm]
+  )
+
+  const handleCloseDropdown = useCallback(() => {
+    setShowDropdown(false)
+  }, [])
 
   return (
     <header className="sticky top-0 z-40 bg-court-dark/95 backdrop-blur-md border-b border-court-border">
@@ -53,12 +75,19 @@ export function Header() {
 
         {/* Search & Favorites */}
         <div className="flex items-center gap-3 flex-1 justify-end">
-          <div className="w-full max-w-md">
+          <div ref={searchContainerRef} className="relative w-full max-w-md">
             <SearchInput
-              placeholder="Search teams, players, competitions..."
-              onSearch={setSearchTerm}
-              externalValue={searchTerm}
+              placeholder="Search all organisations, teams, players..."
+              onSearch={handleSearch}
+              externalValue={globalSearchTerm}
             />
+            {showDropdown && (
+              <GlobalSearchDropdown
+                searchTerm={globalSearchTerm}
+                onClose={handleCloseDropdown}
+                containerRef={searchContainerRef}
+              />
+            )}
           </div>
           <ThemeToggle />
           <FavoritesHeaderButton />

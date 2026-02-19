@@ -1,17 +1,36 @@
 'use client'
 
+import { useMemo } from 'react'
 import { usePlayer } from '@/hooks/use-player'
 import { useNavigation } from '@/hooks/use-navigation'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
 import { EmptyState } from '@/components/common/EmptyState'
-import { StatBadge } from '@/components/common/StatBadge'
 import { PlayerStats } from './PlayerStats'
+
+interface ProfileCompetition {
+  readonly competitionId: number
+  readonly competitionUniqueKey: string
+  readonly longName: string
+  readonly isPublicStats: number
+}
 
 export function PlayerProfile() {
   const { state } = useNavigation()
   const playerId = state.params.playerId as number | undefined
-  const { data, isLoading, error, refetch } = usePlayer(playerId ?? null)
+  const userId = state.params.userId as number | undefined
+  const { data, isLoading, error, refetch } = usePlayer(playerId ?? null, userId ?? null)
+
+  const competitions = useMemo<readonly ProfileCompetition[]>(() => {
+    if (!data) return []
+    const raw = (data.competitions as readonly Record<string, unknown>[]) ?? []
+    return raw.map((c) => ({
+      competitionId: (c.competitionId as number) ?? 0,
+      competitionUniqueKey: (c.competitionUniqueKey as string) ?? '',
+      longName: (c.longName as string) ?? '',
+      isPublicStats: (c.isPublicStats as number) ?? 0,
+    }))
+  }, [data])
 
   if (isLoading) return <LoadingSpinner message="Loading player profile..." />
   if (error) return <ErrorMessage message={error} onRetry={refetch} />
@@ -22,7 +41,7 @@ export function PlayerProfile() {
   const photoUrl = data.photoUrl as string | undefined
   const dateOfBirth = data.dateOfBirth as string | undefined
   const teams = (data.teams as readonly Record<string, unknown>[]) ?? []
-  const userId = (data.id as number) ?? (data.userId as number) ?? playerId
+  const resolvedUserId = (data.id as number) ?? (data.userId as number) ?? playerId
 
   return (
     <div className="space-y-6">
@@ -71,20 +90,8 @@ export function PlayerProfile() {
       </div>
 
       {/* Stats section */}
-      {userId && (
-        <PlayerStats userId={userId} />
-      )}
-
-      {/* Raw data fallback - development only */}
-      {process.env.NODE_ENV === 'development' && (
-        <details className="card-basketball p-4">
-          <summary className="text-sm text-gray-500 cursor-pointer hover:text-gray-300">
-            View raw profile data
-          </summary>
-          <pre className="mt-3 text-xs text-gray-400 overflow-x-auto whitespace-pre-wrap">
-            {JSON.stringify(data, null, 2)}
-          </pre>
-        </details>
+      {resolvedUserId && (
+        <PlayerStats userId={resolvedUserId} competitions={competitions} />
       )}
     </div>
   )

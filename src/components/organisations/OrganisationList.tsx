@@ -1,18 +1,43 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useOrganisations } from '@/hooks/use-organisations'
 import { useNavigation } from '@/hooks/use-navigation'
 import { useSearch } from '@/hooks/use-search'
+import { useGlobalSearchIndex } from '@/hooks/use-global-search-index'
+import { useSearchPrefetch } from '@/hooks/use-search-prefetch'
 import { OrganisationCard } from './OrganisationCard'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
 import { EmptyState } from '@/components/common/EmptyState'
+import type { SearchableEntity } from '@/types/global-search'
 
 export function OrganisationList() {
   const { data, isLoading, error, refetch } = useOrganisations()
   const { navigateTo } = useNavigation()
   const { filterItems } = useSearch()
+  const { register } = useGlobalSearchIndex()
+
+  // Background pre-fetch competitions and divisions for all orgs
+  useSearchPrefetch(data as readonly { organisationUniqueKey: string; name: string }[] | null)
+
+  useEffect(() => {
+    if (!data || !Array.isArray(data) || data.length === 0) return
+
+    const entities: SearchableEntity[] = data.map((org) => ({
+      type: 'organisation' as const,
+      id: org.organisationUniqueKey,
+      name: org.name ?? '',
+      targetView: 'competitions' as const,
+      breadcrumbs: [
+        { label: 'Home', view: 'organisations' as const, params: {} as Record<string, string | number> },
+        { label: org.name ?? '', view: 'competitions' as const, params: { organisationUniqueKey: org.organisationUniqueKey } },
+      ],
+      params: { organisationUniqueKey: org.organisationUniqueKey },
+    }))
+
+    register(entities)
+  }, [data, register])
 
   const handleOrgClick = useCallback(
     (orgKey: string, name: string) => {

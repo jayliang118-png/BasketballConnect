@@ -1,13 +1,15 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useCompetitions } from '@/hooks/use-competitions'
 import { useNavigation } from '@/hooks/use-navigation'
 import { useSearch } from '@/hooks/use-search'
+import { useGlobalSearchIndex } from '@/hooks/use-global-search-index'
 import { CompetitionCard } from './CompetitionCard'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
 import { EmptyState } from '@/components/common/EmptyState'
+import type { SearchableEntity } from '@/types/global-search'
 
 export function CompetitionList() {
   const { state } = useNavigation()
@@ -15,6 +17,35 @@ export function CompetitionList() {
   const { data, isLoading, error, refetch } = useCompetitions(orgKey ?? null)
   const { navigateTo } = useNavigation()
   const { filterItems } = useSearch()
+  const { register } = useGlobalSearchIndex()
+
+  useEffect(() => {
+    if (!data || !Array.isArray(data) || data.length === 0) return
+
+    const orgLabel = state.breadcrumbs[1]?.label ?? ''
+
+    const entities: SearchableEntity[] = data.map((comp) => {
+      const params = {
+        competitionKey: comp.uniqueKey,
+        competitionId: comp.id,
+        organisationUniqueKey: orgKey ?? '',
+      }
+      return {
+        type: 'competition' as const,
+        id: comp.uniqueKey,
+        name: comp.name ?? '',
+        parentLabel: orgLabel,
+        targetView: 'divisions' as const,
+        breadcrumbs: [
+          ...state.breadcrumbs,
+          { label: comp.name ?? '', view: 'divisions' as const, params },
+        ],
+        params,
+      }
+    })
+
+    register(entities)
+  }, [data, register, state.breadcrumbs, orgKey])
 
   const handleCompClick = useCallback(
     (comp: { readonly uniqueKey: string; readonly id: number; readonly name: string }) => {

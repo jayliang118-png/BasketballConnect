@@ -9,6 +9,8 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
 import { EmptyState } from '@/components/common/EmptyState'
 
+const PAGE_SIZE = 20
+
 const STAT_VALUE_FIELD: Record<string, string> = {
   TOTALPOINTS: 'totalPts',
   AVGPOINTS: 'avgPts',
@@ -37,17 +39,32 @@ export function Leaderboard() {
   const { state } = useNavigation()
   const divisionId = state.params.divisionId as number | undefined
   const [statType, setStatType] = useState('TOTALPOINTS')
+  const [page, setPage] = useState(0)
+
+  const offset = page * PAGE_SIZE
 
   const { data, isLoading, error, refetch } = useStats(
     statType,
     divisionId ?? null,
-    0,
-    20
+    offset,
+    PAGE_SIZE,
   )
 
   const handleStatTypeChange = useCallback((type: string) => {
     setStatType(type)
+    setPage(0)
   }, [])
+
+  const handlePrevPage = useCallback(() => {
+    setPage((p) => Math.max(0, p - 1))
+  }, [])
+
+  const handleNextPage = useCallback(() => {
+    setPage((p) => p + 1)
+  }, [])
+
+  const hasData = !isLoading && !error && Array.isArray(data) && data.length > 0
+  const hasNextPage = Array.isArray(data) && data.length === PAGE_SIZE
 
   return (
     <div className="space-y-4">
@@ -66,7 +83,7 @@ export function Leaderboard() {
             {data.map((item, index) => {
               const playerName = `${item.firstName ?? ''} ${item.lastName ?? ''}`.trim() || 'Unknown'
               const teamName = (item.teamName as string) ?? undefined
-              const rank = item.rank ? Number(item.rank) : index + 1
+              const rank = item.rank ? Number(item.rank) : offset + index + 1
               const value = extractStatValue(item, statType)
 
               return (
@@ -82,6 +99,31 @@ export function Leaderboard() {
           </div>
         )
       })()}
+
+      {/* Pagination */}
+      {hasData && (
+        <div className="flex items-center justify-between px-1">
+          <button
+            type="button"
+            onClick={handlePrevPage}
+            disabled={page === 0}
+            className="px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-court-elevated text-gray-300 hover:bg-court-elevated/80 hover:text-gray-100"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-gray-500">
+            Page {page + 1}
+          </span>
+          <button
+            type="button"
+            onClick={handleNextPage}
+            disabled={!hasNextPage}
+            className="px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-court-elevated text-gray-300 hover:bg-court-elevated/80 hover:text-gray-100"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   )
 }

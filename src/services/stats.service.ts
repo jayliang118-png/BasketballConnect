@@ -40,13 +40,13 @@ export async function fetchScoringStatsByGrade(
 }
 
 /**
- * Fetches a user's scoring summary.
- * GET /livescores/stats/v2/summaryScoringByUser?userId=X&aggregate=X&sportRefId=2&competitionId=X
+ * Fetches a user's scoring summary (season or match-by-match).
+ * GET /livescores/stats/v2/summaryScoringByUser?userId=X&aggregate=X&sportRefId=2&competitionUniqueKey=X
  */
 export async function fetchUserScoringSummary(
   userId: number,
-  aggregate: string,
-  competitionId: number,
+  aggregate: 'CAREER' | 'MATCH',
+  competitionUniqueKey: string,
 ): Promise<unknown> {
   try {
     const data = await client.get(
@@ -55,7 +55,7 @@ export async function fetchUserScoringSummary(
         userId,
         aggregate,
         sportRefId: SPORT_REF_ID_BASKETBALL,
-        competitionId,
+        competitionUniqueKey,
       },
     )
     return data

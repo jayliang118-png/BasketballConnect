@@ -5,68 +5,237 @@ import { useMemo } from 'react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
 import { EmptyState } from '@/components/common/EmptyState'
-import { StatBadge } from '@/components/common/StatBadge'
 
 interface PlayerStatsProps {
   readonly userId: number
+  readonly competitions: readonly PlayerCompetition[]
 }
 
-export function PlayerStats({ userId }: PlayerStatsProps) {
-  const fetcher = useMemo(
+interface PlayerCompetition {
+  readonly competitionId: number
+  readonly competitionUniqueKey: string
+  readonly longName: string
+  readonly isPublicStats: number
+}
+
+interface SeasonStatRow {
+  readonly competitionName: string
+  readonly totalMatches: number
+  readonly avgPts: string
+  readonly totalPts: number
+  readonly twoPMade: number
+  readonly threePMade: number
+  readonly ftMade: number
+}
+
+interface MatchLogRow {
+  readonly matchId: number
+  readonly team1Name: string
+  readonly team2Name: string
+  readonly team1LogoUrl: string | null
+  readonly team2LogoUrl: string | null
+  readonly totalPts: number
+  readonly twoPMade: number
+  readonly threePMade: number
+  readonly ftMade: number
+  readonly pf: number
+  readonly tf: number
+}
+
+function parseNum(val: unknown): number {
+  if (typeof val === 'number') return val
+  if (typeof val === 'string') return Number(val) || 0
+  return 0
+}
+
+function TeamLogo({ url, name }: { readonly url: string | null; readonly name: string }) {
+  if (url) {
+    return (
+      <img
+        src={url}
+        alt={name}
+        className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+      />
+    )
+  }
+  return null
+}
+
+export function PlayerStats({ userId, competitions }: PlayerStatsProps) {
+  // Fetch CAREER stats across all competitions (no specific competition filter)
+  const careerFetcher = useMemo(
     () => async () => {
       const { fetchUserScoringSummary } = await import('@/services/stats.service')
-      return fetchUserScoringSummary(userId, 'CAREER', 0)
+      // Use empty string to get all competitions
+      const data = await fetchUserScoringSummary(userId, 'CAREER', '')
+      return data
     },
-    [userId]
+    [userId],
   )
 
-  const { data, isLoading, error, refetch } = useApiData(fetcher, [userId])
+  const { data: careerData, isLoading: careerLoading, error: careerError, refetch: careerRefetch } =
+    useApiData(careerFetcher, [userId])
 
-  if (isLoading) return <LoadingSpinner message="Loading stats..." />
-  if (error) return <ErrorMessage message={error} onRetry={refetch} />
-  if (!data) return <EmptyState message="No stats available" />
+  // Fetch MATCH stats across all competitions (empty key = all)
+  const matchFetcher = useMemo(
+    () => async () => {
+      const { fetchUserScoringSummary } = await import('@/services/stats.service')
+      return fetchUserScoringSummary(userId, 'MATCH', '')
+    },
+    [userId],
+  )
 
-  const stats = data as Record<string, unknown>
-  const statEntries = Array.isArray(stats)
-    ? stats
-    : (stats.stats as unknown[]) ?? [stats]
+  const { data: matchData, isLoading: matchLoading, error: matchError, refetch: matchRefetch } =
+    useApiData(matchFetcher, [userId])
 
-  if (statEntries.length === 0) {
-    return <EmptyState message="No career stats recorded" />
-  }
+  // Parse season stats
+  const seasonStats = useMemo<readonly SeasonStatRow[]>(() => {
+    if (!careerData) return []
+    const items = Array.isArray(careerData) ? careerData : []
+    return items.map((row: Record<string, unknown>) => ({
+      competitionName: String(row.competitionName ?? ''),
+      totalMatches: parseNum(row.totalMatches),
+      avgPts: Number(parseNum(row.avgPts)).toFixed(1),
+      totalPts: parseNum(row.totalPts),
+      twoPMade: parseNum(row['2PMade']),
+      threePMade: parseNum(row['3PMade']),
+      ftMade: parseNum(row.FTMade),
+    }))
+  }, [careerData])
+
+  // Parse match log
+  const matchLog = useMemo<readonly MatchLogRow[]>(() => {
+    if (!matchData) return []
+    const items = Array.isArray(matchData) ? matchData : []
+    return items.map((row: Record<string, unknown>) => ({
+      matchId: parseNum(row.matchId),
+      team1Name: String(row.team1Name ?? ''),
+      team2Name: String(row.team2Name ?? ''),
+      team1LogoUrl: (row.team1LogoUrl as string | null) ?? null,
+      team2LogoUrl: (row.team2LogoUrl as string | null) ?? null,
+      totalPts: parseNum(row.totalPts),
+      twoPMade: parseNum(row['2PMade']),
+      threePMade: parseNum(row['3PMade']),
+      ftMade: parseNum(row.FTMade),
+      pf: parseNum(row.PF),
+      tf: parseNum(row.TF),
+    }))
+  }, [matchData])
+
+  if (careerLoading) return <LoadingSpinner message="Loading stats..." />
+  if (careerError) return <ErrorMessage message={careerError} onRetry={careerRefetch} />
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-gray-200">Career Stats</h3>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-        {statEntries.map((entry, idx) => {
-          const stat = entry as Record<string, unknown>
-          return Object.entries(stat)
-            .filter(([key]) => typeof stat[key] === 'number')
-            .slice(0, 6)
-            .map(([key, value]) => (
-              <StatBadge
-                key={`${idx}-${key}`}
-                label={key.replace(/([A-Z])/g, ' $1').trim()}
-                value={value as number}
-                color={key.includes('point') || key.includes('Point') ? 'orange' : 'blue'}
-              />
-            ))
-        })}
-      </div>
-
-      {/* Raw stats fallback - development only */}
-      {process.env.NODE_ENV === 'development' && (
-        <details className="card-basketball p-4">
-          <summary className="text-sm text-gray-500 cursor-pointer hover:text-gray-300">
-            View raw stats
-          </summary>
-          <pre className="mt-3 text-xs text-gray-400 overflow-x-auto whitespace-pre-wrap">
-            {JSON.stringify(data, null, 2)}
-          </pre>
-        </details>
+    <div className="space-y-6">
+      {/* Season Statistics */}
+      {seasonStats.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-200 mb-3">Season Statistics</h3>
+          <div className="card-basketball overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-court-dark text-gray-400 text-xs uppercase">
+                    <th className="text-left px-4 py-3">Competition</th>
+                    <th className="text-center px-3 py-3">M</th>
+                    <th className="text-center px-3 py-3">AVG PTS</th>
+                    <th className="text-center px-3 py-3">PTS</th>
+                    <th className="text-center px-3 py-3">2P</th>
+                    <th className="text-center px-3 py-3">3P</th>
+                    <th className="text-center px-3 py-3">FTM</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {seasonStats.map((row, idx) => (
+                    <tr
+                      key={idx}
+                      className={`border-b border-court-border/50 ${
+                        row.competitionName === 'Career'
+                          ? 'bg-court-elevated font-semibold'
+                          : 'hover:bg-court-elevated/50'
+                      }`}
+                    >
+                      <td className="px-4 py-3 text-gray-200">{row.competitionName}</td>
+                      <td className="text-center px-3 py-3 text-gray-300">{row.totalMatches}</td>
+                      <td className="text-center px-3 py-3 text-gray-300">{row.avgPts}</td>
+                      <td className="text-center px-3 py-3 text-hoop-orange font-mono font-semibold">{row.totalPts}</td>
+                      <td className="text-center px-3 py-3 text-gray-300">{row.twoPMade}</td>
+                      <td className="text-center px-3 py-3 text-gray-300">{row.threePMade}</td>
+                      <td className="text-center px-3 py-3 text-gray-300">{row.ftMade}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p className="text-xs text-gray-600 mt-2">
+            Note: Career Statistics may include competitions hidden from public display
+          </p>
+        </div>
       )}
+
+      {seasonStats.length === 0 && (
+        <EmptyState message="No season stats available" />
+      )}
+
+      {/* Match Log */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-200 mb-3">Match Log</h3>
+        {matchLoading ? (
+          <LoadingSpinner message="Loading match log..." />
+        ) : matchError ? (
+          <ErrorMessage message={matchError} onRetry={matchRefetch} />
+        ) : matchLog.length === 0 ? (
+          <EmptyState message="No match log available" />
+        ) : (
+            <div className="card-basketball overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-court-dark text-gray-400 text-xs uppercase">
+                      <th className="text-left px-4 py-3">Home Team</th>
+                      <th className="text-left px-4 py-3">Away Team</th>
+                      <th className="text-center px-3 py-3">PTS</th>
+                      <th className="text-center px-3 py-3">2P</th>
+                      <th className="text-center px-3 py-3">3P</th>
+                      <th className="text-center px-3 py-3">FTM</th>
+                      <th className="text-center px-3 py-3">PF</th>
+                      <th className="text-center px-3 py-3">TF</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {matchLog.map((row, idx) => (
+                      <tr
+                        key={row.matchId || idx}
+                        className="border-b border-court-border/50 hover:bg-court-elevated/50"
+                      >
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <TeamLogo url={row.team1LogoUrl} name={row.team1Name} />
+                            <span className="text-gray-200 truncate max-w-[160px]">{row.team1Name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <TeamLogo url={row.team2LogoUrl} name={row.team2Name} />
+                            <span className="text-gray-200 truncate max-w-[160px]">{row.team2Name}</span>
+                          </div>
+                        </td>
+                        <td className="text-center px-3 py-3 text-hoop-orange font-mono font-semibold">{row.totalPts}</td>
+                        <td className="text-center px-3 py-3 text-gray-300">{row.twoPMade}</td>
+                        <td className="text-center px-3 py-3 text-gray-300">{row.threePMade}</td>
+                        <td className="text-center px-3 py-3 text-gray-300">{row.ftMade}</td>
+                        <td className="text-center px-3 py-3 text-gray-300">{row.pf}</td>
+                        <td className="text-center px-3 py-3 text-gray-300">{row.tf}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+      </div>
     </div>
   )
 }
