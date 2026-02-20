@@ -1,9 +1,13 @@
 'use client'
 
+import Link from 'next/link'
 import type { LadderEntry } from '@/types/ladder'
 
 interface LadderRowProps {
   readonly entry: LadderEntry
+  readonly orgKey: string
+  readonly compKey: string
+  readonly divisionId: number
 }
 
 function getRankStyle(rank: number): string {
@@ -16,16 +20,29 @@ function formatWinPercentage(pct: number): string {
   return `${(pct * 100).toFixed(0)}%`
 }
 
-export function LadderRow({ entry }: LadderRowProps) {
+export function LadderRow({ entry, orgKey, compKey, divisionId }: LadderRowProps) {
+  const teamHref = entry.teamUniqueKey
+    ? `/orgs/${orgKey}/competitions/${compKey}/divisions/${divisionId}/teams/${entry.teamUniqueKey}`
+    : null
+
   return (
     <tr className="border-b border-court-border/30 hover:bg-court-elevated/50 transition-colors">
       <td className="px-3 py-2.5 text-center whitespace-nowrap">
         <span className={getRankStyle(entry.rank)}>{entry.rank}</span>
       </td>
       <td className="px-3 py-2.5 text-left whitespace-nowrap">
-        <span className="text-sm font-medium text-gray-200 truncate max-w-[180px] inline-block">
-          {entry.teamName}
-        </span>
+        {teamHref ? (
+          <Link
+            href={teamHref}
+            className="text-sm font-medium text-gray-200 hover:text-hoop-orange transition-colors truncate max-w-[180px] inline-block"
+          >
+            {entry.teamName}
+          </Link>
+        ) : (
+          <span className="text-sm font-medium text-gray-200 truncate max-w-[180px] inline-block">
+            {entry.teamName}
+          </span>
+        )}
       </td>
       <td className="px-2 py-2.5 text-center text-sm text-gray-300">{entry.played}</td>
       <td className="px-2 py-2.5 text-center text-sm text-stat-green">{entry.wins}</td>

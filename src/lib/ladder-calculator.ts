@@ -22,6 +22,7 @@ const PTS_FORFEIT_LOSS = 0
 interface MutableTeamStats {
   teamId: number
   teamName: string
+  teamUniqueKey: string | null
   played: number
   wins: number
   losses: number
@@ -43,12 +44,14 @@ function getOrCreateTeam(
   teams: Map<number, MutableTeamStats>,
   teamId: number,
   teamName: string,
+  teamUniqueKey: string | null,
 ): MutableTeamStats {
   const existing = teams.get(teamId)
   if (existing) return existing
   const entry: MutableTeamStats = {
     teamId,
     teamName,
+    teamUniqueKey,
     played: 0,
     wins: 0,
     losses: 0,
@@ -93,8 +96,8 @@ export function computeLadder(
       if (isNaN(team1ResultId) || isNaN(team2ResultId)) continue
       if (team1ResultId === 0 && team2ResultId === 0) continue
 
-      const t1 = getOrCreateTeam(teams, team1.id, team1.name)
-      const t2 = getOrCreateTeam(teams, team2.id, team2.name)
+      const t1 = getOrCreateTeam(teams, team1.id, team1.name, team1.teamUniqueKey)
+      const t2 = getOrCreateTeam(teams, team2.id, team2.name, team2.teamUniqueKey)
 
       const score1 = Number(match.team1Score) || 0
       const score2 = Number(match.team2Score) || 0
@@ -149,6 +152,7 @@ export function computeLadder(
       rank: 0,
       teamId: t.teamId,
       teamName: t.teamName,
+      teamUniqueKey: t.teamUniqueKey,
       played: t.played,
       wins: t.wins,
       losses: t.losses,

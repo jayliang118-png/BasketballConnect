@@ -6,6 +6,7 @@ export interface LadderEntry {
   readonly rank: number
   readonly teamId: number
   readonly teamName: string
+  readonly teamUniqueKey: string | null
   readonly played: number
   readonly wins: number
   readonly losses: number

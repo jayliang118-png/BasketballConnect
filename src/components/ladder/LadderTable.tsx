@@ -1,6 +1,5 @@
 'use client'
 
-import { useNavigation } from '@/hooks/use-navigation'
 import { useLadder } from '@/hooks/use-ladder'
 import { LadderRow } from './LadderRow'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -24,14 +23,17 @@ const COLUMN_HEADERS = [
   { key: 'gd', label: 'GD', title: 'Goal Difference' },
 ] as const
 
-export function LadderTable() {
-  const { state } = useNavigation()
-  const competitionId = state.params.competitionId as number | undefined
-  const divisionId = state.params.divisionId as number | undefined
+interface LadderTableProps {
+  readonly competitionId: number
+  readonly divisionId: number
+  readonly orgKey: string
+  readonly compKey: string
+}
 
+export function LadderTable({ competitionId, divisionId, orgKey, compKey }: LadderTableProps) {
   const { entries, isLoading, error, refetch } = useLadder(
-    competitionId ?? null,
-    divisionId ?? null,
+    competitionId,
+    divisionId,
   )
 
   if (isLoading) return <LoadingSpinner message="Loading ladder..." />
@@ -59,7 +61,13 @@ export function LadderTable() {
           </thead>
           <tbody>
             {entries.map((entry) => (
-              <LadderRow key={entry.teamId} entry={entry} />
+              <LadderRow
+                key={entry.teamId}
+                entry={entry}
+                orgKey={orgKey}
+                compKey={compKey}
+                divisionId={divisionId}
+              />
             ))}
           </tbody>
         </table>
