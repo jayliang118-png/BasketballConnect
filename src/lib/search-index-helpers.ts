@@ -28,16 +28,22 @@ export function filterEntitiesByTerm(
   entities: ReadonlyMap<string, SearchableEntity>,
   term: string,
 ): readonly SearchableEntity[] {
-  const lower = term.trim().toLowerCase()
+  const trimmed = term.trim().toLowerCase()
 
-  if (!lower) {
+  if (!trimmed) {
     return []
   }
+
+  const words = trimmed.split(/\s+/).filter(Boolean)
 
   const results: SearchableEntity[] = []
 
   for (const entity of entities.values()) {
-    if (entity.name.toLowerCase().includes(lower)) {
+    const nameLower = entity.name.toLowerCase()
+    const parentLower = entity.parentLabel?.toLowerCase() ?? ''
+    const searchable = `${nameLower} ${parentLower}`
+
+    if (words.every((w) => searchable.includes(w))) {
       results.push(entity)
     }
   }

@@ -25,7 +25,13 @@ interface QueryParams {
 }
 
 function buildUrl(baseUrl: string, path: string, params?: QueryParams): string {
-  const url = new URL(path, baseUrl)
+  const isAbsolute = /^https?:\/\//i.test(baseUrl)
+
+  const fullPath = isAbsolute
+    ? new URL(path, baseUrl).toString()
+    : `${baseUrl.replace(/\/+$/, '')}${path}`
+
+  const url = new URL(fullPath, isAbsolute ? undefined : typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
 
   if (params) {
     const entries = Object.entries(params).filter(
@@ -37,19 +43,23 @@ function buildUrl(baseUrl: string, path: string, params?: QueryParams): string {
     }
   }
 
-  return url.toString()
+  return isAbsolute ? url.toString() : `${url.pathname}${url.search}`
 }
 
-export function createApiClient(baseUrl: string, token: string): ApiClient {
+export function createApiClient(baseUrl: string, token?: string): ApiClient {
   async function get<T>(path: string, params?: QueryParams): Promise<T> {
     const url = buildUrl(baseUrl, path, params)
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+    if (token) {
+      headers['Authorization'] = token
+    }
+
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Authorization': token,
-        'Content-Type': 'application/json',
-      },
+      headers,
     })
 
     if (!response.ok) {

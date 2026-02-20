@@ -10,6 +10,7 @@ interface FavoriteButtonProps {
 export function FavoriteButton({ isFavorited, onToggle }: FavoriteButtonProps) {
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
+      e.preventDefault()
       e.stopPropagation()
       onToggle()
     },

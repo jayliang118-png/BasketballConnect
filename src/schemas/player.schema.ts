@@ -20,7 +20,7 @@ export const PlayerSchema = z
     firstName: z.string(),
     lastName: z.string(),
     photoUrl: z.string().nullable().optional(),
-    teams: z.array(PlayerTeamSchema),
+    teams: z.array(PlayerTeamSchema).optional().default([]),
   })
   .passthrough()
 

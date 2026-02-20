@@ -6,7 +6,7 @@ import { createApiClient } from '@/lib/api-client'
 import { config } from '@/lib/config'
 import { extractArray } from '@/lib/utils'
 
-const client = createApiClient(config.apiBaseUrl, config.apiToken)
+const client = createApiClient(config.apiBaseUrl)
 
 /**
  * Fetches competitions for a given organisation.

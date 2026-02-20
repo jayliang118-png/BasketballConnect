@@ -1,8 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useGameSummary, useGameEvents } from '@/hooks/use-game'
-import { useNavigation } from '@/hooks/use-navigation'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -102,10 +102,9 @@ interface PlayerRowProps {
   readonly teamId: number
   readonly stats: PlayerStatsMap
   readonly userIdLookup: UserIdLookup
-  readonly onPlayerClick: (userId: number, firstName: string, lastName: string) => void
 }
 
-function PlayerRow({ player, index, teamId, stats, userIdLookup, onPlayerClick }: PlayerRowProps) {
+function PlayerRow({ player, index, teamId, stats, userIdLookup }: PlayerRowProps) {
   const firstName = player.firstName ?? ''
   const lastName = player.lastName ?? ''
   const name = `${firstName} ${lastName}`.trim() || `Player ${index + 1}`
@@ -114,13 +113,12 @@ function PlayerRow({ player, index, teamId, stats, userIdLookup, onPlayerClick }
   const s = stats.get(buildPlayerStatsKey(player.shirt, teamId)) ?? EMPTY_STATS
 
   const nameCell = userId ? (
-    <button
-      type="button"
-      onClick={() => onPlayerClick(userId, firstName, lastName)}
-      className="text-hoop-orange hover:text-hoop-orange-dark hover:underline transition-colors text-left"
+    <Link
+      href={`/players/user/${userId}`}
+      className="text-hoop-orange hover:text-hoop-orange-dark hover:underline transition-colors"
     >
       {name}
-    </button>
+    </Link>
   ) : (
     <span className="text-gray-200">{name}</span>
   )
@@ -146,10 +144,9 @@ interface TeamRosterTableProps {
   readonly color: 'hoop-orange' | 'jersey-blue'
   readonly stats: PlayerStatsMap
   readonly userIdLookup: UserIdLookup
-  readonly onPlayerClick: (userId: number, firstName: string, lastName: string) => void
 }
 
-function TeamRosterTable({ teamName, teamId, players, color, stats, userIdLookup, onPlayerClick }: TeamRosterTableProps) {
+function TeamRosterTable({ teamName, teamId, players, color, stats, userIdLookup }: TeamRosterTableProps) {
   return (
     <div className="card-basketball overflow-hidden">
       <div className="px-4 py-3 border-b border-court-border">
@@ -178,7 +175,6 @@ function TeamRosterTable({ teamName, teamId, players, color, stats, userIdLookup
                 teamId={teamId}
                 stats={stats}
                 userIdLookup={userIdLookup}
-                onPlayerClick={onPlayerClick}
               />
             ))}
           </tbody>
@@ -274,7 +270,6 @@ function useUserIdLookup(
 export function GameSummary({ matchId, competitionUniqueKey }: GameSummaryProps) {
   const { data, isLoading, error, refetch } = useGameSummary(matchId, competitionUniqueKey)
   const { data: events } = useGameEvents(matchId)
-  const { navigateTo, state } = useNavigation()
 
   const rosters = useMemo(() => {
     if (!data) return null
@@ -289,16 +284,6 @@ export function GameSummary({ matchId, competitionUniqueKey }: GameSummaryProps)
   const team1Key = data?.teamData?.team1?.teamUniqueKey ?? null
   const team2Key = data?.teamData?.team2?.teamUniqueKey ?? null
   const userIdLookup = useUserIdLookup(team1Key, team2Key)
-
-  const handlePlayerClick = useCallback(
-    (userId: number, firstName: string, lastName: string) => {
-      navigateTo('playerProfile', {
-        ...state.params,
-        userId,
-      }, `${firstName} ${lastName}`)
-    },
-    [navigateTo, state.params],
-  )
 
   if (isLoading) return <LoadingSpinner message="Loading game summary..." />
   if (error) return <ErrorMessage message={error} onRetry={refetch} />
@@ -356,7 +341,6 @@ export function GameSummary({ matchId, competitionUniqueKey }: GameSummaryProps)
               color="hoop-orange"
               stats={playerStats}
               userIdLookup={userIdLookup}
-              onPlayerClick={handlePlayerClick}
             />
           )}
           {rosters.team2Players.length > 0 && (
@@ -367,7 +351,6 @@ export function GameSummary({ matchId, competitionUniqueKey }: GameSummaryProps)
               color="jersey-blue"
               stats={playerStats}
               userIdLookup={userIdLookup}
-              onPlayerClick={handlePlayerClick}
             />
           )}
         </div>

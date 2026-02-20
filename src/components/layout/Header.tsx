@@ -1,45 +1,45 @@
 'use client'
 
+import { useRouter, usePathname } from 'next/navigation'
 import { SearchInput } from '@/components/common/SearchInput'
 import { GlobalSearchDropdown } from '@/components/search/GlobalSearchDropdown'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
 import { FavoritesHeaderButton } from '@/components/favorites/FavoritesHeaderButton'
-import { useNavigation } from '@/hooks/use-navigation'
 import { useSearch } from '@/hooks/use-search'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 export function Header() {
-  const { state, reset } = useNavigation()
+  const router = useRouter()
+  const pathname = usePathname()
   const { setSearchTerm } = useSearch()
-  const previousView = useRef(state.currentView)
+  const previousPathname = useRef(pathname)
   const searchContainerRef = useRef<HTMLDivElement>(null)
   const [globalSearchTerm, setGlobalSearchTerm] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
 
   useEffect(() => {
-    if (state.currentView !== previousView.current) {
-      previousView.current = state.currentView
+    if (pathname !== previousPathname.current) {
+      previousPathname.current = pathname
       setGlobalSearchTerm('')
       setSearchTerm('')
       setShowDropdown(false)
     }
-  }, [state.currentView, setSearchTerm])
+  }, [pathname, setSearchTerm])
 
   const handleLogoClick = useCallback(() => {
     setGlobalSearchTerm('')
     setSearchTerm('')
     setShowDropdown(false)
-    reset()
-  }, [reset, setSearchTerm])
+    router.push('/orgs')
+  }, [router, setSearchTerm])
 
   const handleSearch = useCallback(
     (term: string) => {
       setGlobalSearchTerm(term)
       setShowDropdown(term.trim().length > 0)
-      // Clear local page filter when global search is active
       setSearchTerm('')
     },
-    [setSearchTerm]
+    [setSearchTerm],
   )
 
   const handleCloseDropdown = useCallback(() => {
@@ -55,7 +55,7 @@ export function Header() {
           className="flex items-center gap-3 hover:opacity-80 transition-opacity flex-shrink-0"
           type="button"
         >
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-hoop-orange to-hoop-orange-dark flex items-center justify-center shadow-lg animate-pulse-glow">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-hoop-orange to-hoop-orange-dark flex items-center justify-center shadow-lg animate-pulse-glow" suppressHydrationWarning>
             <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
               <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
               <path d="M12 2 C12 2 12 22 12 22" stroke="currentColor" strokeWidth="1.5" />

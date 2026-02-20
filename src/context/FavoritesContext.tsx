@@ -1,23 +1,30 @@
 'use client'
 
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react'
-import type { FavoriteTeam, FavoritesState } from '@/types/favorites'
-import type { Guid } from '@/types/common'
+import type { FavoriteItem, FavoriteType, FavoritesState } from '@/types/favorites'
+import {
+  migrateLegacyTeamFavorites,
+  removeLegacyStorage,
+} from '@/lib/favorites-migration'
 
-const STORAGE_KEY = 'basketball-hub-favorite-teams'
+const STORAGE_KEY = 'basketball-hub-favorites'
 
 const INITIAL_STATE: FavoritesState = {
-  teams: [],
+  items: [],
   isHydrated: false,
+}
+
+function matchesItem(a: FavoriteItem, type: FavoriteType, id: string): boolean {
+  return a.type === type && a.id === id
 }
 
 export interface FavoritesContextValue {
   readonly state: FavoritesState
-  readonly addFavorite: (team: FavoriteTeam) => void
-  readonly removeFavorite: (teamUniqueKey: Guid) => void
-  readonly updateFavorite: (team: FavoriteTeam) => void
-  readonly isFavorite: (teamUniqueKey: Guid) => boolean
-  readonly toggleFavorite: (team: FavoriteTeam) => void
+  readonly addFavorite: (item: FavoriteItem) => void
+  readonly removeFavorite: (type: FavoriteType, id: string) => void
+  readonly updateFavorite: (item: FavoriteItem) => void
+  readonly isFavorite: (type: FavoriteType, id: string) => boolean
+  readonly toggleFavorite: (item: FavoriteItem) => void
   readonly favoritesCount: number
 }
 
@@ -33,79 +40,115 @@ export function FavoritesProvider({ children }: FavoritesProviderProps) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
-      const teams: readonly FavoriteTeam[] = stored ? JSON.parse(stored) : []
-      setState({ teams, isHydrated: true })
+      const existingItems: readonly FavoriteItem[] = stored
+        ? JSON.parse(stored)
+        : []
+
+      if (existingItems.length > 0) {
+        setState({ items: existingItems, isHydrated: true })
+      } else {
+        const legacyItems = migrateLegacyTeamFavorites()
+        setState({ items: legacyItems, isHydrated: true })
+        if (legacyItems.length > 0) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(legacyItems))
+          removeLegacyStorage()
+        }
+      }
     } catch {
-      setState({ teams: [], isHydrated: true })
+      setState({ items: [], isHydrated: true })
     }
   }, [])
 
   useEffect(() => {
     if (!state.isHydrated) return
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.teams))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items))
     } catch {
       // localStorage full or unavailable
     }
-  }, [state.teams, state.isHydrated])
+  }, [state.items, state.isHydrated])
 
-  const addFavorite = useCallback((team: FavoriteTeam) => {
+  const addFavorite = useCallback((item: FavoriteItem) => {
     setState((prev) => {
-      if (prev.teams.some((t) => t.teamUniqueKey === team.teamUniqueKey)) return prev
-      return { ...prev, teams: [...prev.teams, team] }
+      if (prev.items.some((i) => matchesItem(i, item.type, item.id)))
+        return prev
+      return { ...prev, items: [...prev.items, item] }
     })
   }, [])
 
-  const removeFavorite = useCallback((teamUniqueKey: Guid) => {
+  const removeFavorite = useCallback((type: FavoriteType, id: string) => {
     setState((prev) => ({
       ...prev,
-      teams: prev.teams.filter((t) => t.teamUniqueKey !== teamUniqueKey),
+      items: prev.items.filter((i) => !matchesItem(i, type, id)),
     }))
   }, [])
 
-  const updateFavorite = useCallback((team: FavoriteTeam) => {
+  const updateFavorite = useCallback((item: FavoriteItem) => {
     setState((prev) => {
-      const existing = prev.teams.find((t) => t.teamUniqueKey === team.teamUniqueKey)
+      const existing = prev.items.find((i) =>
+        matchesItem(i, item.type, item.id),
+      )
       if (!existing) return prev
-      const merged = { ...existing, ...team }
-      if (
-        existing.name === merged.name &&
-        JSON.stringify(existing.breadcrumbs) === JSON.stringify(merged.breadcrumbs) &&
-        JSON.stringify(existing.params) === JSON.stringify(merged.params)
-      ) {
+      const merged = { ...existing, ...item }
+      if (existing.name === merged.name && existing.url === merged.url) {
         return prev
       }
-      const updated = prev.teams.map((t) =>
-        t.teamUniqueKey === team.teamUniqueKey ? merged : t
-      )
-      return { ...prev, teams: updated }
+      return {
+        ...prev,
+        items: prev.items.map((i) =>
+          matchesItem(i, item.type, item.id) ? merged : i,
+        ),
+      }
     })
   }, [])
 
   const isFavorite = useCallback(
-    (teamUniqueKey: Guid): boolean =>
-      state.teams.some((t) => t.teamUniqueKey === teamUniqueKey),
-    [state.teams],
+    (type: FavoriteType, id: string): boolean =>
+      state.items.some((i) => matchesItem(i, type, id)),
+    [state.items],
   )
 
-  const toggleFavorite = useCallback((team: FavoriteTeam) => {
+  const toggleFavorite = useCallback((item: FavoriteItem) => {
     setState((prev) => {
-      const exists = prev.teams.some((t) => t.teamUniqueKey === team.teamUniqueKey)
+      const exists = prev.items.some((i) =>
+        matchesItem(i, item.type, item.id),
+      )
       if (exists) {
-        return { ...prev, teams: prev.teams.filter((t) => t.teamUniqueKey !== team.teamUniqueKey) }
+        return {
+          ...prev,
+          items: prev.items.filter((i) => !matchesItem(i, item.type, item.id)),
+        }
       }
-      return { ...prev, teams: [...prev.teams, team] }
+      return { ...prev, items: [...prev.items, item] }
     })
   }, [])
 
-  const favoritesCount = state.teams.length
+  const favoritesCount = state.items.length
 
   const value = useMemo<FavoritesContextValue>(
-    () => ({ state, addFavorite, removeFavorite, updateFavorite, isFavorite, toggleFavorite, favoritesCount }),
-    [state, addFavorite, removeFavorite, updateFavorite, isFavorite, toggleFavorite, favoritesCount],
+    () => ({
+      state,
+      addFavorite,
+      removeFavorite,
+      updateFavorite,
+      isFavorite,
+      toggleFavorite,
+      favoritesCount,
+    }),
+    [
+      state,
+      addFavorite,
+      removeFavorite,
+      updateFavorite,
+      isFavorite,
+      toggleFavorite,
+      favoritesCount,
+    ],
   )
 
   return (
-    <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>
+    <FavoritesContext.Provider value={value}>
+      {children}
+    </FavoritesContext.Provider>
   )
 }

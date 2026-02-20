@@ -4,11 +4,10 @@
  */
 
 import { z } from 'zod/v4'
-import { GuidSchema } from './common.schema'
 
 export const OrganisationSchema = z
   .object({
-    organisationUniqueKey: GuidSchema,
+    organisationUniqueKey: z.string().min(1),
     name: z.string().min(1),
   })
   .passthrough()

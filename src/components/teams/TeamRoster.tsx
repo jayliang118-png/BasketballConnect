@@ -1,83 +1,20 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { useTeamDetail } from '@/hooks/use-teams'
-import { useNavigation } from '@/hooks/use-navigation'
 import { useFavorites } from '@/hooks/use-favorites'
 import { useGlobalSearchIndex } from '@/hooks/use-global-search-index'
-import { FavoriteButton } from './FavoriteButton'
-import { TeamFixtures } from './TeamFixtures'
+import { FavoriteButton } from '@/components/common/FavoriteButton'
 import { Card } from '@/components/common/Card'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
 import { EmptyState } from '@/components/common/EmptyState'
 import type { SearchableEntity } from '@/types/global-search'
 
-type TeamTab = 'fixtures' | 'roster'
-
-const TABS: readonly { readonly key: TeamTab; readonly label: string }[] = [
-  { key: 'fixtures', label: 'Fixtures' },
-  { key: 'roster', label: 'Roster' },
-]
-
-interface TeamContextInfo {
-  readonly organisation?: string
-  readonly competition?: string
-  readonly division?: string
-}
-
-function extractTeamContext(breadcrumbs: readonly { readonly label: string }[]): TeamContextInfo {
-  // Breadcrumb order: Home(0) > Org(1) > Competition(2) > Division(3) > Team(4)
-  return {
-    organisation: breadcrumbs[1]?.label,
-    competition: breadcrumbs[2]?.label,
-    division: breadcrumbs[3]?.label,
-  }
-}
-
-interface TeamHeaderProps {
-  readonly name: string
-  readonly teamUniqueKey?: string
-  readonly isFavorited: boolean
-  readonly onToggleFavorite?: () => void
-  readonly context: TeamContextInfo
-}
-
-function TeamHeader({ name, teamUniqueKey, isFavorited, onToggleFavorite, context }: TeamHeaderProps) {
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center gap-2">
-        <h2 className="text-xl font-bold text-gray-100">{name}</h2>
-        {teamUniqueKey && onToggleFavorite && (
-          <FavoriteButton isFavorited={isFavorited} onToggle={onToggleFavorite} />
-        )}
-      </div>
-      {(context.organisation || context.competition || context.division) && (
-        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-          {context.organisation && (
-            <span className="text-xs text-gray-400">{context.organisation}</span>
-          )}
-          {context.organisation && context.competition && (
-            <span className="text-xs text-gray-600">/</span>
-          )}
-          {context.competition && (
-            <span className="text-xs text-gray-400">{context.competition}</span>
-          )}
-          {context.competition && context.division && (
-            <span className="text-xs text-gray-600">/</span>
-          )}
-          {context.division && (
-            <span className="text-xs text-gray-400">{context.division}</span>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
 interface RosterContentProps {
   readonly players: readonly { readonly playerId: number; readonly firstName: string; readonly lastName: string }[]
-  readonly onPlayerClick: (playerId: number, firstName: string, lastName: string) => void
+  readonly onPlayerClick: (playerId: number) => void
 }
 
 function RosterContent({ players, onPlayerClick }: RosterContentProps) {
@@ -90,7 +27,7 @@ function RosterContent({ players, onPlayerClick }: RosterContentProps) {
       {players.map((player) => (
         <Card
           key={player.playerId}
-          onClick={() => onPlayerClick(player.playerId, player.firstName, player.lastName)}
+          onClick={() => onPlayerClick(player.playerId)}
           className="group"
         >
           <div className="flex items-center gap-3">
@@ -111,130 +48,91 @@ function RosterContent({ players, onPlayerClick }: RosterContentProps) {
   )
 }
 
-export function TeamRoster() {
-  const [activeTab, setActiveTab] = useState<TeamTab>('fixtures')
-  const { state, navigateTo } = useNavigation()
-  const teamUniqueKey = state.params.teamUniqueKey as string | undefined
-  const teamName = state.params.teamName as string | undefined
-  const { isFavorite, toggleFavorite, updateFavorite } = useFavorites()
-  const teamContext = extractTeamContext(state.breadcrumbs)
+interface TeamRosterProps {
+  readonly teamKey: string
+  readonly teamName: string
+}
 
-  // Auto-update favorite with full context when visiting through hierarchy
-  // updateFavorite is a no-op if the team isn't a favorite, so no need for isFavorite check
-  const hasFullContext = state.params.competitionId !== undefined && state.params.divisionId !== undefined
+export function TeamRoster({ teamKey, teamName }: TeamRosterProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const { isFavorite, toggleFavorite, updateFavorite } = useFavorites()
+
+  const isRealGuid = !teamKey.startsWith('team-')
+  const { data, isLoading, error, refetch } = useTeamDetail(isRealGuid ? teamKey : null)
+  const { register } = useGlobalSearchIndex()
+
+  // Auto-update favorite name when data loads
   useEffect(() => {
-    if (teamUniqueKey && hasFullContext) {
+    if (isRealGuid && data?.name) {
       updateFavorite({
-        teamUniqueKey,
-        name: teamName ?? 'Unknown',
-        breadcrumbs: state.breadcrumbs,
-        params: state.params,
+        type: 'team',
+        id: teamKey,
+        name: data.name,
+        url: pathname,
       })
     }
-  }, [teamUniqueKey, hasFullContext, updateFavorite, teamName, state.breadcrumbs, state.params])
-
-  // Only fetch detail when we have a real GUID (not a fallback team-<id> key)
-  const isRealGuid = teamUniqueKey ? !teamUniqueKey.startsWith('team-') : false
-  const { data, isLoading, error, refetch } = useTeamDetail(isRealGuid ? (teamUniqueKey ?? null) : null)
-  const { register } = useGlobalSearchIndex()
+  }, [isRealGuid, teamKey, data?.name, pathname, updateFavorite])
 
   // Register players into the global search index when roster loads
   useEffect(() => {
     const players = data?.players
     if (!players || players.length === 0) return
 
-    const orgLabel = state.breadcrumbs[1]?.label ?? ''
-    const compLabel = state.breadcrumbs[2]?.label ?? ''
-    const divLabel = state.breadcrumbs[3]?.label ?? ''
-    const teamLabel = state.breadcrumbs[4]?.label ?? teamName ?? ''
-    const parentLabel = [orgLabel, compLabel, divLabel, teamLabel].filter(Boolean).join(' > ')
+    const playerEntities: SearchableEntity[] = players
+      .filter((p) => p.playerId && (p.firstName || p.lastName))
+      .map((player) => {
+        const fullName = `${player.firstName} ${player.lastName}`.trim()
+        return {
+          type: 'player' as const,
+          id: String(player.playerId),
+          name: fullName,
+          parentLabel: data?.name ?? teamName,
+          targetView: 'playerProfile' as const,
+          breadcrumbs: [],
+          params: { playerId: player.playerId } as Record<string, string | number>,
+        }
+      })
 
-    const entities: SearchableEntity[] = players.map((player) => {
-      const fullName = `${player.firstName} ${player.lastName}`.trim()
-      const params = {
-        ...state.params,
-        playerId: player.playerId,
-      }
-      return {
-        type: 'player' as const,
-        id: String(player.playerId),
-        name: fullName,
-        parentLabel,
-        targetView: 'playerProfile' as const,
-        breadcrumbs: [
-          ...state.breadcrumbs,
-          { label: fullName, view: 'playerProfile' as const, params },
-        ],
-        params,
-      }
-    })
-
-    register(entities)
-  }, [data?.players, register, state.breadcrumbs, state.params, teamName])
+    if (playerEntities.length > 0) {
+      register(playerEntities)
+    }
+  }, [data?.players, data?.name, register, teamName])
 
   const handlePlayerClick = useCallback(
-    (playerId: number, firstName: string, lastName: string) => {
-      navigateTo('playerProfile', {
-        ...state.params,
-        playerId,
-      }, `${firstName} ${lastName}`)
+    (playerId: number) => {
+      router.push(`/players/${playerId}`)
     },
-    [navigateTo, state.params]
+    [router],
   )
 
-  const handleToggleFavorite = teamUniqueKey
+  const displayName = data?.name ?? teamName
+
+  const handleToggleFavorite = isRealGuid
     ? () => toggleFavorite({
-        teamUniqueKey,
-        name: data?.name ?? teamName ?? 'Unknown',
-        breadcrumbs: state.breadcrumbs,
-        params: state.params,
+        type: 'team',
+        id: teamKey,
+        name: displayName,
+        url: pathname,
       })
     : undefined
 
-  const displayName = data?.name ?? teamName ?? 'Unknown Team'
+  if (isLoading) return <LoadingSpinner message="Loading roster..." />
+  if (error) return <ErrorMessage message={error} onRetry={refetch} />
+  if (!isRealGuid) {
+    return <EmptyState message="Detailed roster information is not available for this team" icon="team" />
+  }
+
   const players = data?.players ?? []
 
   return (
     <div className="space-y-4">
-      <TeamHeader
-        name={displayName}
-        teamUniqueKey={teamUniqueKey}
-        isFavorited={teamUniqueKey ? isFavorite(teamUniqueKey) : false}
-        onToggleFavorite={handleToggleFavorite}
-        context={teamContext}
-      />
-
-      {/* Tab bar */}
-      <div className="flex border-b border-court-border">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-6 py-3 text-sm font-medium transition-colors relative ${
-              activeTab === tab.key
-                ? 'text-hoop-orange'
-                : 'text-gray-500 hover:text-gray-300'
-            }`}
-            type="button"
-          >
-            {tab.label}
-            {activeTab === tab.key && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-hoop-orange rounded-full" />
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
-      <div className="animate-fade-up">
-        {activeTab === 'fixtures' && <TeamFixtures />}
-        {activeTab === 'roster' && (
-          isLoading ? <LoadingSpinner message="Loading roster..." /> :
-          error ? <ErrorMessage message={error} onRetry={refetch} /> :
-          !isRealGuid ? <EmptyState message="Detailed roster information is not available for this team" icon="team" /> :
-          <RosterContent players={players} onPlayerClick={handlePlayerClick} />
+      <div className="flex items-center gap-2">
+        {handleToggleFavorite && (
+          <FavoriteButton isFavorited={isFavorite('team', teamKey)} onToggle={handleToggleFavorite} />
         )}
       </div>
+      <RosterContent players={players} onPlayerClick={handlePlayerClick} />
     </div>
   )
 }

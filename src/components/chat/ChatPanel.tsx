@@ -6,27 +6,64 @@
 
 import { useCallback } from 'react'
 import { useChat } from '@/hooks/use-chat'
-import { useNavigation } from '@/hooks/use-navigation'
+import { useRouter } from 'next/navigation'
 import { ChatMessageList } from './ChatMessageList'
 import { ChatInput } from './ChatInput'
 import { ChatWelcome } from './ChatWelcome'
 import { ChatToggleButton } from './ChatToggleButton'
-import type { ViewType } from '@/types/navigation'
 
 export function ChatPanel() {
   const { state, sendMessage, toggleChat, clearHistory } = useChat()
-  const { navigateTo } = useNavigation()
+  const router = useRouter()
 
   const handleNavigate = useCallback(
     (
-      view: ViewType,
+      view: string,
       params: Record<string, string | number>,
-      label: string,
+      _label: string,
     ) => {
-      navigateTo(view, params, label)
+      const orgKey = params.organisationUniqueKey as string | undefined
+      const compKey = params.competitionKey as string | undefined
+      const divId = params.divisionId as number | undefined
+      const teamKey = params.teamUniqueKey as string | undefined
+
+      let url = '/orgs'
+
+      switch (view) {
+        case 'competitions':
+          if (orgKey) url = `/orgs/${orgKey}/competitions`
+          break
+        case 'divisions':
+          if (orgKey && compKey)
+            url = `/orgs/${orgKey}/competitions/${compKey}/divisions`
+          break
+        case 'divisionDetail':
+          if (orgKey && compKey && divId)
+            url = `/orgs/${orgKey}/competitions/${compKey}/divisions/${divId}`
+          break
+        case 'teamDetail':
+          if (orgKey && compKey && divId && teamKey) {
+            url = `/orgs/${orgKey}/competitions/${compKey}/divisions/${divId}/teams/${teamKey}`
+          }
+          break
+        case 'gameDetail': {
+          const matchId = params.matchId as number | undefined
+          if (orgKey && compKey && divId && teamKey && matchId) {
+            url = `/orgs/${orgKey}/competitions/${compKey}/divisions/${divId}/teams/${teamKey}/games/${matchId}`
+          }
+          break
+        }
+        case 'playerProfile':
+          if (params.playerId) url = `/players/${params.playerId}`
+          break
+        default:
+          break
+      }
+
+      router.push(url)
       toggleChat()
     },
-    [navigateTo, toggleChat],
+    [router, toggleChat],
   )
 
   const hasMessages = state.messages.length > 0

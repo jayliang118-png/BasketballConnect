@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigation } from '@/hooks/use-navigation'
+import { useRouter } from 'next/navigation'
 import { useGlobalSearch } from '@/hooks/use-global-search'
 import { GlobalSearchResultGroup } from './GlobalSearchResultGroup'
 import type { SearchableEntity } from '@/types/global-search'
@@ -14,7 +14,7 @@ interface GlobalSearchDropdownProps {
 
 export function GlobalSearchDropdown({ searchTerm, onClose, containerRef }: GlobalSearchDropdownProps) {
   const { results, totalCount, entityCount } = useGlobalSearch(searchTerm)
-  const { restoreState } = useNavigation()
+  const router = useRouter()
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -44,14 +44,40 @@ export function GlobalSearchDropdown({ searchTerm, onClose, containerRef }: Glob
 
   const handleSelect = useCallback(
     (entity: SearchableEntity) => {
-      restoreState({
-        currentView: entity.targetView,
-        breadcrumbs: [...entity.breadcrumbs],
-        params: { ...entity.params },
-      })
+      const p = entity.params
+      const orgKey = p.organisationUniqueKey as string | undefined
+      const compKey = p.competitionKey as string | undefined
+      const divId = p.divisionId as number | undefined
+      const teamKey = p.teamUniqueKey as string | undefined
+
+      let url = '/orgs'
+
+      switch (entity.targetView) {
+        case 'competitions':
+          if (orgKey) url = `/orgs/${orgKey}/competitions`
+          break
+        case 'divisions':
+          if (orgKey && compKey) url = `/orgs/${orgKey}/competitions/${compKey}/divisions`
+          break
+        case 'divisionDetail':
+          if (orgKey && compKey && divId) url = `/orgs/${orgKey}/competitions/${compKey}/divisions/${divId}`
+          break
+        case 'teamDetail':
+          if (orgKey && compKey && divId && teamKey) {
+            url = `/orgs/${orgKey}/competitions/${compKey}/divisions/${divId}/teams/${teamKey}`
+          }
+          break
+        case 'playerProfile':
+          if (p.playerId) url = `/players/${p.playerId}`
+          break
+        default:
+          break
+      }
+
+      router.push(url)
       onClose()
     },
-    [restoreState, onClose]
+    [router, onClose],
   )
 
   // Keyboard navigation

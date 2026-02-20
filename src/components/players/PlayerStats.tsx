@@ -236,6 +236,19 @@ export function PlayerStats({ userId, competitions }: PlayerStatsProps) {
             </div>
           )}
       </div>
+
+      {/* Stats Legend */}
+      <div className="card-basketball p-4 max-w-xs">
+        <dl className="grid grid-cols-[auto_auto_1fr] gap-x-3 gap-y-1 text-sm text-gray-400">
+          <dt className="font-mono font-semibold">M</dt><dd>=</dd><dd>Matches Played</dd>
+          <dt className="font-mono font-semibold">PTS</dt><dd>=</dd><dd>Points</dd>
+          <dt className="font-mono font-semibold">2P</dt><dd>=</dd><dd>2 Points Shots Made</dd>
+          <dt className="font-mono font-semibold">3P</dt><dd>=</dd><dd>3 Points Shots Made</dd>
+          <dt className="font-mono font-semibold">FT</dt><dd>=</dd><dd>Free Throws Made</dd>
+          <dt className="font-mono font-semibold">PF</dt><dd>=</dd><dd>Personal Fouls</dd>
+          <dt className="font-mono font-semibold">TF</dt><dd>=</dd><dd>Technical Fouls</dd>
+        </dl>
+      </div>
     </div>
   )
 }

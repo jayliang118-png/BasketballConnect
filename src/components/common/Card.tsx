@@ -18,6 +18,7 @@ export function Card({ children, onClick, className = '', animated = true }: Car
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
+      suppressHydrationWarning
       onKeyDown={(e) => {
         if (onClick && (e.key === 'Enter' || e.key === ' ')) {
           e.preventDefault()

@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from 'react'
 import { useStats } from '@/hooks/use-stats'
-import { useNavigation } from '@/hooks/use-navigation'
 import { StatTypeSelector } from './StatTypeSelector'
 import { LeaderboardRow } from './LeaderboardRow'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -35,9 +34,11 @@ function extractStatValue(item: Record<string, unknown>, statType: string): stri
   return '0'
 }
 
-export function Leaderboard() {
-  const { state } = useNavigation()
-  const divisionId = state.params.divisionId as number | undefined
+interface LeaderboardProps {
+  readonly divisionId: number
+}
+
+export function Leaderboard({ divisionId }: LeaderboardProps) {
   const [statType, setStatType] = useState('TOTALPOINTS')
   const [page, setPage] = useState(0)
 
@@ -45,7 +46,7 @@ export function Leaderboard() {
 
   const { data, isLoading, error, refetch } = useStats(
     statType,
-    divisionId ?? null,
+    divisionId,
     offset,
     PAGE_SIZE,
   )

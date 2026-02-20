@@ -26,7 +26,7 @@ export function FavoritesHeaderButton() {
             ? 'border-hoop-orange/50 bg-court-elevated text-hoop-orange'
             : 'border-court-border bg-court-surface text-gray-400 hover:text-gray-200 hover:border-gray-600'
         }`}
-        aria-label={`Favorite teams (${favoritesCount})`}
+        aria-label={`Favorites (${favoritesCount})`}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >

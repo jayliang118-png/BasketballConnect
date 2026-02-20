@@ -1,14 +1,13 @@
-import type { Guid } from './common'
-import type { BreadcrumbItem } from './navigation'
+export type FavoriteType = 'organisation' | 'competition' | 'division' | 'team' | 'player'
 
-export interface FavoriteTeam {
-  readonly teamUniqueKey: Guid
+export interface FavoriteItem {
+  readonly type: FavoriteType
+  readonly id: string
   readonly name: string
-  readonly breadcrumbs?: readonly BreadcrumbItem[]
-  readonly params?: Readonly<Record<string, string | number>>
+  readonly url?: string
 }
 
 export interface FavoritesState {
-  readonly teams: readonly FavoriteTeam[]
+  readonly items: readonly FavoriteItem[]
   readonly isHydrated: boolean
 }

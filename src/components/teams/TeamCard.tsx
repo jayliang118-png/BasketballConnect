@@ -1,7 +1,7 @@
 'use client'
 
 import { Card } from '@/components/common/Card'
-import { FavoriteButton } from './FavoriteButton'
+import { FavoriteButton } from '@/components/common/FavoriteButton'
 
 interface TeamCardProps {
   readonly name: string
@@ -10,7 +10,7 @@ interface TeamCardProps {
   readonly organisationName?: string
   readonly isFavorited?: boolean
   readonly onToggleFavorite?: () => void
-  readonly onClick: () => void
+  readonly onClick?: () => void
 }
 
 export function TeamCard({ name, playersCount, organisationName, isFavorited, onToggleFavorite, onClick }: TeamCardProps) {

@@ -5,7 +5,7 @@
 import { createApiClient } from '@/lib/api-client'
 import { config } from '@/lib/config'
 
-const client = createApiClient(config.apiBaseUrl, config.apiToken)
+const client = createApiClient(config.apiBaseUrl)
 
 /**
  * Fetches a player's public profile by playerId.

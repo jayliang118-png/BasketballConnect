@@ -10,7 +10,8 @@ import { GuidSchema } from './common.schema'
 
 export const TeamSchema = z
   .object({
-    teamUniqueKey: GuidSchema,
+    id: z.number().int().optional(),
+    teamUniqueKey: GuidSchema.optional(),
     name: z.string().min(1),
   })
   .passthrough()

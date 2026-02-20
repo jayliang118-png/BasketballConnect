@@ -1,8 +1,7 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useFixtures } from '@/hooks/use-fixtures'
-import { useNavigation } from '@/hooks/use-navigation'
 import { RoundAccordion } from './RoundAccordion'
 import { MatchCard } from './MatchCard'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -38,34 +37,21 @@ export function groupRoundsByName(rounds: readonly Round[]): readonly GroupedRou
   }))
 }
 
-export function FixtureList() {
-  const { state, navigateTo } = useNavigation()
-  const competitionId = state.params.competitionId as number | undefined
-  const divisionId = state.params.divisionId as number | undefined
+interface FixtureListProps {
+  readonly competitionId: number
+  readonly divisionId: number
+  readonly onMatchClick?: (match: Match) => void
+}
 
+export function FixtureList({ competitionId, divisionId, onMatchClick }: FixtureListProps) {
   const { data, isLoading, error, refetch } = useFixtures(
-    competitionId ?? null,
-    divisionId ?? null
+    competitionId,
+    divisionId,
   )
 
   const groupedRounds = useMemo(
     () => (data && Array.isArray(data) ? groupRoundsByName(data) : []),
-    [data]
-  )
-
-  const handleMatchClick = useCallback(
-    (match: Match) => {
-      const compUniqueKey = state.params.competitionKey
-      const params: Record<string, string | number> = {
-        ...state.params,
-        matchId: match.id,
-      }
-      if (compUniqueKey !== undefined) {
-        params.competitionUniqueKey = compUniqueKey
-      }
-      navigateTo('gameDetail', params, `Game #${match.id}`)
-    },
-    [navigateTo, state.params]
+    [data],
   )
 
   if (isLoading) return <LoadingSpinner message="Loading fixtures..." />
@@ -81,24 +67,27 @@ export function FixtureList() {
           matchCount={round.matches.length}
           defaultOpen={index === 0}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {round.matches.map((match, mIdx) => (
-              <MatchCard
-                key={match.id ?? mIdx}
-                team1={{
-                  teamName: match.team1?.name,
-                  score: match.team1Score,
-                }}
-                team2={{
-                  teamName: match.team2?.name,
-                  score: match.team2Score,
-                }}
-                startTime={match.startTime}
-                venueName={match.venueCourt?.venue?.name}
-                onClick={() => handleMatchClick(match)}
-              />
-            ))}
-          </div>
+          {round.matches.map((match, mIdx) => (
+            <MatchCard
+              key={match.id ?? mIdx}
+              matchId={match.id}
+              team1={{
+                teamName: match.team1?.name,
+                score: match.team1Score,
+                logoUrl: match.team1?.logoUrl,
+              }}
+              team2={{
+                teamName: match.team2?.name,
+                score: match.team2Score,
+                logoUrl: match.team2?.logoUrl,
+              }}
+              startTime={match.startTime}
+              venueName={match.venueCourt?.venue?.name}
+              venueCourtName={match.venueCourt?.name}
+              matchStatus={match.matchStatus}
+              onClick={onMatchClick ? () => onMatchClick(match) : undefined}
+            />
+          ))}
         </RoundAccordion>
       ))}
     </div>

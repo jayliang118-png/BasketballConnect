@@ -1,14 +1,18 @@
 'use client'
 
 import { Card } from '@/components/common/Card'
+import { FavoriteButton } from '@/components/common/FavoriteButton'
 
 interface DivisionCardProps {
   readonly name: string
-  readonly id: number
-  readonly onClick: () => void
+  readonly divisionId?: number
+  readonly id?: number
+  readonly isFavorited?: boolean
+  readonly onToggleFavorite?: () => void
+  readonly onClick?: () => void
 }
 
-export function DivisionCard({ name, onClick }: DivisionCardProps) {
+export function DivisionCard({ name, isFavorited, onToggleFavorite, onClick }: DivisionCardProps) {
   return (
     <Card onClick={onClick} className="group">
       <div className="flex items-center gap-4">
@@ -24,6 +28,9 @@ export function DivisionCard({ name, onClick }: DivisionCardProps) {
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">Division</p>
         </div>
+        {onToggleFavorite && (
+          <FavoriteButton isFavorited={isFavorited ?? false} onToggle={onToggleFavorite} />
+        )}
         <svg className="w-4 h-4 text-gray-600 flex-shrink-0 group-hover:text-stat-gold transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
