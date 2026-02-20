@@ -47,7 +47,7 @@ export function Header() {
   }, [])
 
   return (
-    <header className="sticky top-0 z-40 bg-court-dark/95 backdrop-blur-md border-b border-court-border">
+    <header className="sticky top-0 z-40 bg-court-dark border-b border-court-border">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
         {/* Logo & Title */}
         <button
@@ -55,7 +55,7 @@ export function Header() {
           className="flex items-center gap-3 hover:opacity-80 transition-opacity flex-shrink-0"
           type="button"
         >
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-hoop-orange to-hoop-orange-dark flex items-center justify-center shadow-lg animate-pulse-glow" suppressHydrationWarning>
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-hoop-orange to-hoop-orange-dark flex items-center justify-center shadow-lg">
             <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
               <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
               <path d="M12 2 C12 2 12 22 12 22" stroke="currentColor" strokeWidth="1.5" />
