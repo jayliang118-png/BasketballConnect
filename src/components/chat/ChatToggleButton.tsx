@@ -15,7 +15,7 @@ export function ChatToggleButton({ isOpen, onClick }: ChatToggleButtonProps) {
       onClick={onClick}
       type="button"
       suppressHydrationWarning
-      className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-hoop-orange to-hoop-orange-dark text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center animate-pulse-glow"
+      className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-hoop-orange to-hoop-orange-dark text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
       aria-label={isOpen ? 'Close chat' : 'Open chat assistant'}
     >
       {isOpen ? (
