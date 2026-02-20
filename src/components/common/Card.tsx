@@ -7,7 +7,7 @@ interface CardProps {
   readonly animated?: boolean
 }
 
-export function Card({ children, onClick, className = '', animated = true }: CardProps) {
+export function Card({ children, onClick, className = '', animated = false }: CardProps) {
   const baseClasses = 'card-basketball p-4 hover:card-basketball-hover'
   const animationClass = animated ? 'animate-fade-up' : ''
   const clickableClass = onClick ? 'cursor-pointer' : ''

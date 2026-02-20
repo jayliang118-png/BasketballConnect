@@ -94,7 +94,8 @@ body {
   border: 1px solid var(--color-court-border);
   border-radius: 0.75rem;
   box-shadow: 0 10px 15px -3px var(--color-card-shadow, rgba(0, 0, 0, 0.3));
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  contain: layout style;
 }
 
 @utility card-basketball-hover {
@@ -133,6 +134,17 @@ body {
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* Disable transform animations on small screens to prevent iOS GPU crashes */
+@media (max-width: 640px) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
