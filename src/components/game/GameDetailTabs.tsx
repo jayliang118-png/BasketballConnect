@@ -32,9 +32,13 @@ export function GameDetailTabs({
 
   const handleTabChange = useCallback(
     (tab: TabType) => {
-      router.replace(`${pathname}?tab=${tab}`, { scroll: false })
+      const params = new URLSearchParams()
+      if (competitionUniqueKey) params.set('compKey', competitionUniqueKey)
+      if (competitionId) params.set('compId', String(competitionId))
+      params.set('tab', tab)
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
     },
-    [router, pathname],
+    [router, pathname, competitionUniqueKey, competitionId],
   )
 
   const currentTab = (activeTab as TabType) || 'summary'
@@ -62,7 +66,7 @@ export function GameDetailTabs({
 
       <div>
         {currentTab === 'summary' && (
-          <GameSummary matchId={matchId} competitionUniqueKey={competitionUniqueKey} />
+          <GameSummary matchId={matchId} competitionUniqueKey={competitionUniqueKey} competitionId={competitionId} />
         )}
         {currentTab === 'actionlog' && (
           <ActionLog matchId={matchId} competitionId={competitionUniqueKey} />

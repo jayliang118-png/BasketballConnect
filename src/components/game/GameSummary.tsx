@@ -1,28 +1,36 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import Link from 'next/link'
-import { useGameSummary, useGameEvents } from '@/hooks/use-game'
+import { useGameSummary, useScoringByPlayer } from '@/hooks/use-game'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
 import { EmptyState } from '@/components/common/EmptyState'
-import type { GameSummary as GameSummaryType, GameSummaryPlayer, GameEvent } from '@/types/game'
+import type { GameSummary as GameSummaryType, GameSummaryPlayer } from '@/types/game'
 
 interface GameSummaryProps {
   readonly matchId: number | null
   readonly competitionUniqueKey: string | null
+  readonly competitionId: number | null
+}
+
+interface ShotStat {
+  readonly made: number
+  readonly attempted: number
 }
 
 interface PlayerGameStats {
+  readonly playerId: number
   readonly pts: number
-  readonly ft: number
-  readonly twoPt: number
-  readonly threePt: number
+  readonly ft: ShotStat
+  readonly twoPt: ShotStat
+  readonly threePt: ShotStat
   readonly pf: number
   readonly tf: number
 }
 
-const EMPTY_STATS: PlayerGameStats = { pts: 0, ft: 0, twoPt: 0, threePt: 0, pf: 0, tf: 0 }
+const EMPTY_SHOT: ShotStat = { made: 0, attempted: 0 }
+const EMPTY_STATS: PlayerGameStats = { playerId: 0, pts: 0, ft: EMPTY_SHOT, twoPt: EMPTY_SHOT, threePt: EMPTY_SHOT, pf: 0, tf: 0 }
 
 type PlayerStatsMap = ReadonlyMap<string, PlayerGameStats>
 
@@ -31,35 +39,35 @@ function buildPlayerStatsKey(shirt: string, teamId: number): string {
 }
 
 /**
- * Aggregates game events into per-player stat totals keyed by "teamId:shirt".
- * Stat displayName values observed: "2 Points Made", "3 Points Made",
- * "Free Throw Made", "2 Points Missed", "3 Points Missed", "Free Throw Missed"
- * Stat type: "P" = scoring, "PF" = personal foul, "TF" = technical foul
+ * Maps the scoringByPlayer API response into a PlayerStatsMap keyed by "teamId:shirt".
+ * API fields: totalPts, FTMade, FTMiss, 2PMade, 2PMiss, 3PMade, 3PMiss, PF, TF, shirt, teamId
  */
-function aggregatePlayerStats(events: readonly GameEvent[]): PlayerStatsMap {
-  const map = new Map<string, { pts: number; ft: number; twoPt: number; threePt: number; pf: number; tf: number }>()
+function mapScoringByPlayer(rows: readonly Record<string, unknown>[]): PlayerStatsMap {
+  const map = new Map<string, PlayerGameStats>()
 
-  for (const event of events) {
-    const player = event.players[0]
-    if (!player) continue
+  for (const row of rows) {
+    const shirt = String(row.shirt ?? '')
+    const teamId = Number(row.teamId ?? 0)
+    if (!shirt || !teamId) continue
 
-    const key = buildPlayerStatsKey(player.shirt, event.teamId)
-    const current = map.get(key) ?? { pts: 0, ft: 0, twoPt: 0, threePt: 0, pf: 0, tf: 0 }
+    const key = buildPlayerStatsKey(shirt, teamId)
 
-    const display = event.stat.displayName.toLowerCase()
-    const statType = event.stat.type
+    const ftMade = Number(row.FTMade ?? 0)
+    const ftMiss = Number(row.FTMiss ?? 0)
+    const twoPMade = Number(row['2PMade'] ?? 0)
+    const twoPMiss = Number(row['2PMiss'] ?? 0)
+    const threePMade = Number(row['3PMade'] ?? 0)
+    const threePMiss = Number(row['3PMiss'] ?? 0)
 
-    if (display.includes('2 points') && display.includes('made')) {
-      map.set(key, { ...current, twoPt: current.twoPt + 1, pts: current.pts + 2 })
-    } else if (display.includes('3 points') && display.includes('made')) {
-      map.set(key, { ...current, threePt: current.threePt + 1, pts: current.pts + 3 })
-    } else if (display.includes('free throw') && display.includes('made')) {
-      map.set(key, { ...current, ft: current.ft + 1, pts: current.pts + 1 })
-    } else if (statType === 'TF') {
-      map.set(key, { ...current, tf: current.tf + 1 })
-    } else if (statType === 'PF') {
-      map.set(key, { ...current, pf: current.pf + 1 })
-    }
+    map.set(key, {
+      playerId: Number(row.playerId ?? 0),
+      pts: Number(row.totalPts ?? 0),
+      ft: { made: ftMade, attempted: ftMade + ftMiss },
+      twoPt: { made: twoPMade, attempted: twoPMade + twoPMiss },
+      threePt: { made: threePMade, attempted: threePMade + threePMiss },
+      pf: Number(row.PF ?? 0),
+      tf: Number(row.TF ?? 0),
+    })
   }
 
   return map
@@ -90,31 +98,33 @@ function getStatusLabel(status: string): string {
   }
 }
 
-type UserIdLookup = ReadonlyMap<string, number>
-
-function buildNameKey(firstName: string, lastName: string): string {
-  return `${firstName.trim().toLowerCase()}|${lastName.trim().toLowerCase()}`
-}
-
 interface PlayerRowProps {
   readonly player: GameSummaryPlayer
   readonly index: number
   readonly teamId: number
   readonly stats: PlayerStatsMap
-  readonly userIdLookup: UserIdLookup
+  readonly competitionUniqueKey: string | null
 }
 
-function PlayerRow({ player, index, teamId, stats, userIdLookup }: PlayerRowProps) {
+function formatShot(shot: ShotStat): string {
+  return `${shot.made} - ${shot.attempted}`
+}
+
+function PlayerRow({ player, index, teamId, stats, competitionUniqueKey }: PlayerRowProps) {
   const firstName = player.firstName ?? ''
   const lastName = player.lastName ?? ''
   const name = `${firstName} ${lastName}`.trim() || `Player ${index + 1}`
-  const nameKey = buildNameKey(firstName, lastName)
-  const userId = userIdLookup.get(nameKey)
+
   const s = stats.get(buildPlayerStatsKey(player.shirt, teamId)) ?? EMPTY_STATS
 
-  const nameCell = userId ? (
+  // playerId comes directly from the scoringByPlayer API response
+  const playerHref = s.playerId
+    ? `/players/${s.playerId}${competitionUniqueKey ? `?compKey=${encodeURIComponent(competitionUniqueKey)}` : ''}`
+    : undefined
+
+  const nameCell = playerHref ? (
     <Link
-      href={`/players/user/${userId}`}
+      href={playerHref}
       className="text-hoop-orange hover:text-hoop-orange-dark hover:underline transition-colors"
     >
       {name}
@@ -128,9 +138,9 @@ function PlayerRow({ player, index, teamId, stats, userIdLookup }: PlayerRowProp
       <td className="px-2 py-2 text-gray-300 font-mono text-xs w-8 text-center">{player.shirt}</td>
       <td className="px-2 py-2">{nameCell}</td>
       <td className="px-1 py-2 text-center text-hoop-orange font-mono font-semibold text-xs">{s.pts}</td>
-      <td className="px-1 py-2 text-center text-gray-300 font-mono text-xs">{s.ft}</td>
-      <td className="px-1 py-2 text-center text-gray-300 font-mono text-xs">{s.twoPt}</td>
-      <td className="px-1 py-2 text-center text-gray-300 font-mono text-xs">{s.threePt}</td>
+      <td className="px-1 py-2 text-center text-gray-300 font-mono text-xs">{formatShot(s.ft)}</td>
+      <td className="px-1 py-2 text-center text-gray-300 font-mono text-xs">{formatShot(s.twoPt)}</td>
+      <td className="px-1 py-2 text-center text-gray-300 font-mono text-xs">{formatShot(s.threePt)}</td>
       <td className="px-1 py-2 text-center text-gray-300 font-mono text-xs">{s.pf}</td>
       <td className="px-1 py-2 text-center text-gray-300 font-mono text-xs">{s.tf}</td>
     </tr>
@@ -143,10 +153,10 @@ interface TeamRosterTableProps {
   readonly players: readonly GameSummaryPlayer[]
   readonly color: 'hoop-orange' | 'jersey-blue'
   readonly stats: PlayerStatsMap
-  readonly userIdLookup: UserIdLookup
+  readonly competitionUniqueKey: string | null
 }
 
-function TeamRosterTable({ teamName, teamId, players, color, stats, userIdLookup }: TeamRosterTableProps) {
+function TeamRosterTable({ teamName, teamId, players, color, stats, competitionUniqueKey }: TeamRosterTableProps) {
   return (
     <div className="card-basketball overflow-hidden">
       <div className="px-4 py-3 border-b border-court-border">
@@ -174,7 +184,7 @@ function TeamRosterTable({ teamName, teamId, players, color, stats, userIdLookup
                 index={idx}
                 teamId={teamId}
                 stats={stats}
-                userIdLookup={userIdLookup}
+                competitionUniqueKey={competitionUniqueKey}
               />
             ))}
           </tbody>
@@ -200,76 +210,9 @@ function buildTeamRosters(data: GameSummaryType) {
   return { team1Players, team2Players }
 }
 
-/**
- * Fetches team rosters for both teams and builds a name→userId lookup map.
- * Uses the team detail API which returns participants with user.id (userId).
- */
-function useUserIdLookup(
-  team1Key: string | null,
-  team2Key: string | null,
-): UserIdLookup {
-  const [lookup, setLookup] = useState<UserIdLookup>(new Map())
-
-  useEffect(() => {
-    if (!team1Key && !team2Key) return
-
-    const controller = new AbortController()
-
-    async function fetchRosters() {
-      const { fetchTeamDetail } = await import('@/services/team.service')
-      const results = new Map<string, number>()
-
-      const keys = [team1Key, team2Key].filter(Boolean) as string[]
-
-      for (const key of keys) {
-        if (controller.signal.aborted) return
-        try {
-          const raw = await fetchTeamDetail(key) as Record<string, unknown>
-          const participants = (raw.participants ?? raw.players) as readonly Record<string, unknown>[] | undefined
-          if (!participants) continue
-
-          for (const p of participants) {
-            const user = p.user as Record<string, unknown> | undefined
-            if (user) {
-              const id = user.id as number | undefined
-              const firstName = (user.firstName as string) ?? ''
-              const lastName = (user.lastName as string) ?? ''
-              if (id && (firstName || lastName)) {
-                results.set(buildNameKey(firstName, lastName), id)
-              }
-            } else {
-              // Fallback: check for playerId/firstName/lastName directly
-              const id = (p.playerId ?? p.id) as number | undefined
-              const firstName = (p.firstName as string) ?? ''
-              const lastName = (p.lastName as string) ?? ''
-              if (id && (firstName || lastName)) {
-                results.set(buildNameKey(firstName, lastName), id)
-              }
-            }
-          }
-        } catch {
-          // Silently skip failed roster fetches
-        }
-      }
-
-      if (!controller.signal.aborted) {
-        setLookup(results)
-      }
-    }
-
-    fetchRosters()
-
-    return () => {
-      controller.abort()
-    }
-  }, [team1Key, team2Key])
-
-  return lookup
-}
-
-export function GameSummary({ matchId, competitionUniqueKey }: GameSummaryProps) {
+export function GameSummary({ matchId, competitionUniqueKey, competitionId }: GameSummaryProps) {
   const { data, isLoading, error, refetch } = useGameSummary(matchId, competitionUniqueKey)
-  const { data: events } = useGameEvents(matchId)
+  const { data: scoringRows } = useScoringByPlayer(competitionId, matchId)
 
   const rosters = useMemo(() => {
     if (!data) return null
@@ -277,13 +220,9 @@ export function GameSummary({ matchId, competitionUniqueKey }: GameSummaryProps)
   }, [data])
 
   const playerStats = useMemo<PlayerStatsMap>(
-    () => (events ? aggregatePlayerStats(events) : new Map()),
-    [events],
+    () => (scoringRows ? mapScoringByPlayer(scoringRows) : new Map()),
+    [scoringRows],
   )
-
-  const team1Key = data?.teamData?.team1?.teamUniqueKey ?? null
-  const team2Key = data?.teamData?.team2?.teamUniqueKey ?? null
-  const userIdLookup = useUserIdLookup(team1Key, team2Key)
 
   if (isLoading) return <LoadingSpinner message="Loading game summary..." />
   if (error) return <ErrorMessage message={error} onRetry={refetch} />
@@ -340,7 +279,7 @@ export function GameSummary({ matchId, competitionUniqueKey }: GameSummaryProps)
               players={rosters.team1Players}
               color="hoop-orange"
               stats={playerStats}
-              userIdLookup={userIdLookup}
+              competitionUniqueKey={competitionUniqueKey}
             />
           )}
           {rosters.team2Players.length > 0 && (
@@ -350,7 +289,7 @@ export function GameSummary({ matchId, competitionUniqueKey }: GameSummaryProps)
               players={rosters.team2Players}
               color="jersey-blue"
               stats={playerStats}
-              userIdLookup={userIdLookup}
+              competitionUniqueKey={competitionUniqueKey}
             />
           )}
         </div>

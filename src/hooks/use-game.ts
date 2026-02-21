@@ -56,3 +56,21 @@ export function useGameEvents(
 
   return useApiData(fetcher, [matchId])
 }
+
+export function useScoringByPlayer(
+  competitionId: number | null,
+  matchId: number | null,
+): UseApiDataResult<readonly Record<string, unknown>[]> {
+  const fetcher = useMemo(
+    () =>
+      competitionId && matchId
+        ? async () => {
+            const { fetchScoringByPlayer } = await import('@/services/stats.service')
+            return fetchScoringByPlayer(competitionId, matchId) as Promise<readonly Record<string, unknown>[]>
+          }
+        : null,
+    [competitionId, matchId]
+  )
+
+  return useApiData(fetcher, [competitionId, matchId])
+}

@@ -9,6 +9,7 @@ import { useFavorites } from '@/hooks/use-favorites'
 interface ProfileCompetition {
   readonly competitionId: number
   readonly competitionUniqueKey: string
+  readonly organisationUniqueKey: string
   readonly longName: string
   readonly isPublicStats: number
 }
@@ -22,9 +23,11 @@ interface PlayerProfileViewProps {
     readonly teams: readonly Record<string, unknown>[]
     readonly [key: string]: unknown
   }
+  readonly urlPlayerId?: number | null
+  readonly competitionUniqueKey?: string
 }
 
-export function PlayerProfileView({ player }: PlayerProfileViewProps) {
+export function PlayerProfileView({ player, urlPlayerId, competitionUniqueKey }: PlayerProfileViewProps) {
   const firstName = player.firstName ?? ''
   const lastName = player.lastName ?? ''
   const photoUrl = player.photoUrl as string | undefined
@@ -42,6 +45,7 @@ export function PlayerProfileView({ player }: PlayerProfileViewProps) {
     return raw.map((c) => ({
       competitionId: (c.competitionId as number) ?? 0,
       competitionUniqueKey: (c.competitionUniqueKey as string) ?? '',
+      organisationUniqueKey: (c.organisationUniqueKey as string) ?? '',
       longName: (c.longName as string) ?? '',
       isPublicStats: (c.isPublicStats as number) ?? 0,
     }))
@@ -106,7 +110,7 @@ export function PlayerProfileView({ player }: PlayerProfileViewProps) {
 
       {/* Stats section */}
       {userId && (
-        <PlayerStats userId={userId} competitions={competitions} />
+        <PlayerStats userId={userId} playerId={urlPlayerId} competitions={competitions} competitionUniqueKey={competitionUniqueKey} />
       )}
     </div>
   )

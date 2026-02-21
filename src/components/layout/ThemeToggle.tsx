@@ -5,21 +5,15 @@ import { useTheme } from '@/hooks/use-theme'
 export function ThemeToggle() {
   const { theme, toggleTheme, isHydrated } = useTheme()
 
-  if (!isHydrated) {
-    return (
-      <div className="w-9 h-9 rounded-lg bg-court-elevated border border-court-border animate-pulse" />
-    )
-  }
-
   return (
     <button
-      onClick={toggleTheme}
+      onClick={isHydrated ? toggleTheme : undefined}
       type="button"
-      className="w-9 h-9 rounded-lg bg-court-elevated border border-court-border flex items-center justify-center hover:border-hoop-orange/30 transition-colors"
-      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      className={`w-9 h-9 rounded-lg bg-court-elevated border border-court-border flex items-center justify-center transition-colors${isHydrated ? ' hover:border-hoop-orange/30' : ''}`}
+      aria-label={isHydrated && theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+      title={isHydrated && theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
     >
-      {theme === 'dark' ? (
+      {!isHydrated ? null : theme === 'dark' ? (
         <svg className="w-5 h-5 text-hoop-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
