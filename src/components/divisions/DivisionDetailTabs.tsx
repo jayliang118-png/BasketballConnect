@@ -75,6 +75,7 @@ export function DivisionDetailTabs({
           <FixtureList
             competitionId={competitionId}
             divisionId={divisionId}
+            compKey={compKey}
           />
         )}
         {currentTab === 'ladder' && (

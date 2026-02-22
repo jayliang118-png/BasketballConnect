@@ -142,7 +142,41 @@ function buildGameUrl(
   return `/games/${row.matchId}?${params.toString()}`
 }
 
-function MatchLogRow({
+function useMatchRowData(
+  row: MatchLogRow,
+  competitions: readonly PlayerCompetition[],
+  summary: GameSummary | undefined,
+  fallbackCompKey?: string,
+) {
+  const gameUrl = buildGameUrl(row, competitions, fallbackCompKey)
+  const team1Name = summary?.teamData.team1.name || row.team1Name || 'TBD'
+  const team2Name = summary?.teamData.team2.name || row.team2Name || 'TBD'
+  const team1Logo = summary?.teamData.team1.logoUrl ?? row.team1LogoUrl
+  const team2Logo = summary?.teamData.team2.logoUrl ?? row.team2LogoUrl
+  const startTime = summary?.matchData.startTime || row.startTime
+  const team1Score = summary?.matchData.team1Score ?? row.team1Score
+  const team2Score = summary?.matchData.team2Score ?? row.team2Score
+  return { gameUrl, team1Name, team2Name, team1Logo, team2Logo, startTime, team1Score, team2Score }
+}
+
+function ScoreBadge({ team1Score, team2Score, gameUrl }: {
+  readonly team1Score: number
+  readonly team2Score: number
+  readonly gameUrl: string | null
+}) {
+  const badge = (
+    <div className="bg-hoop-orange rounded px-2 py-0.5 inline-block">
+      <span className="font-mono font-bold text-xs text-white">{team1Score} : {team2Score}</span>
+    </div>
+  )
+  if (gameUrl) {
+    return <Link href={gameUrl} className="hover:scale-105 transition-transform inline-block">{badge}</Link>
+  }
+  return badge
+}
+
+/** Desktop table row (hidden on mobile) */
+function MatchLogDesktopRow({
   row,
   competitions,
   summary,
@@ -153,53 +187,28 @@ function MatchLogRow({
   readonly summary: GameSummary | undefined
   readonly fallbackCompKey?: string
 }) {
-  const gameUrl = buildGameUrl(row, competitions, fallbackCompKey)
-
-  // Prefer enriched data from gameSummary, fall back to raw match log fields
-  const team1Name = summary?.teamData.team1.name || row.team1Name || 'TBD'
-  const team2Name = summary?.teamData.team2.name || row.team2Name || 'TBD'
-  const team1Logo = summary?.teamData.team1.logoUrl ?? row.team1LogoUrl
-  const team2Logo = summary?.teamData.team2.logoUrl ?? row.team2LogoUrl
-
-  const startTime = summary?.matchData.startTime || row.startTime
-  const team1Score = summary?.matchData.team1Score ?? row.team1Score
-  const team2Score = summary?.matchData.team2Score ?? row.team2Score
-
-  const scoreBadge = (
-    <div className="bg-hoop-orange rounded px-2 py-0.5 inline-block">
-      <span className="font-mono font-bold text-xs text-white">{team1Score} : {team2Score}</span>
-    </div>
-  )
+  const d = useMatchRowData(row, competitions, summary, fallbackCompKey)
 
   return (
     <tr className="border-b border-court-border/50 hover:bg-court-elevated/50">
-      {/* Date */}
-      <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
-        {startTime ? formatMatchDate(startTime) : ''}
-      </td>
-      {/* Match: Team1 Logo Name  Score  Team2 Logo Name */}
       <td className="px-4 py-3">
+        <div className="text-xs text-gray-500 text-center mb-1">
+          {d.startTime ? formatMatchDate(d.startTime) : ''}
+        </div>
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
           <div className="flex items-center gap-1.5 justify-end">
-            <span className="text-sm text-gray-200 whitespace-nowrap">{team1Name}</span>
-            <TeamLogo url={team1Logo} name={team1Name} />
+            <span className="text-sm text-gray-200 whitespace-nowrap">{d.team1Name}</span>
+            <TeamLogo url={d.team1Logo} name={d.team1Name} />
           </div>
           <div>
-            {gameUrl ? (
-              <Link href={gameUrl} className="hover:scale-105 transition-transform block">
-                {scoreBadge}
-              </Link>
-            ) : (
-              scoreBadge
-            )}
+            <ScoreBadge team1Score={d.team1Score} team2Score={d.team2Score} gameUrl={d.gameUrl} />
           </div>
           <div className="flex items-center gap-1.5">
-            <TeamLogo url={team2Logo} name={team2Name} />
-            <span className="text-sm text-gray-200 whitespace-nowrap">{team2Name}</span>
+            <TeamLogo url={d.team2Logo} name={d.team2Name} />
+            <span className="text-sm text-gray-200 whitespace-nowrap">{d.team2Name}</span>
           </div>
         </div>
       </td>
-      {/* Stats */}
       <td className="px-3 py-3 text-center text-hoop-orange font-mono font-semibold">{row.totalPts}</td>
       <td className="px-3 py-3 text-center text-gray-300">{row.twoPMade}</td>
       <td className="px-3 py-3 text-center text-gray-300">{row.threePMade}</td>
@@ -207,6 +216,69 @@ function MatchLogRow({
       <td className="px-3 py-3 text-center text-gray-300">{row.pf}</td>
       <td className="px-3 py-3 text-center text-gray-300">{row.tf}</td>
     </tr>
+  )
+}
+
+/** Mobile card (hidden on desktop) */
+function MatchLogMobileCard({
+  row,
+  competitions,
+  summary,
+  fallbackCompKey,
+}: {
+  readonly row: MatchLogRow
+  readonly competitions: readonly PlayerCompetition[]
+  readonly summary: GameSummary | undefined
+  readonly fallbackCompKey?: string
+}) {
+  const d = useMatchRowData(row, competitions, summary, fallbackCompKey)
+
+  return (
+    <div className="border-b border-court-border/50 px-4 py-3 space-y-2">
+      {/* Date */}
+      <div className="text-xs text-gray-500">
+        {d.startTime ? formatMatchDate(d.startTime) : ''}
+      </div>
+      {/* Teams + Score */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <div className="flex items-center gap-1.5 justify-end min-w-0">
+          <span className="text-sm text-gray-200 truncate">{d.team1Name}</span>
+          <TeamLogo url={d.team1Logo} name={d.team1Name} />
+        </div>
+        <ScoreBadge team1Score={d.team1Score} team2Score={d.team2Score} gameUrl={d.gameUrl} />
+        <div className="flex items-center gap-1.5 min-w-0">
+          <TeamLogo url={d.team2Logo} name={d.team2Name} />
+          <span className="text-sm text-gray-200 truncate">{d.team2Name}</span>
+        </div>
+      </div>
+      {/* Stats row */}
+      <div className="grid grid-cols-6 text-center text-xs">
+        <div>
+          <div className="text-gray-500 uppercase">PTS</div>
+          <div className="text-hoop-orange font-mono font-semibold">{row.totalPts}</div>
+        </div>
+        <div>
+          <div className="text-gray-500 uppercase">2P</div>
+          <div className="text-gray-300">{row.twoPMade}</div>
+        </div>
+        <div>
+          <div className="text-gray-500 uppercase">3P</div>
+          <div className="text-gray-300">{row.threePMade}</div>
+        </div>
+        <div>
+          <div className="text-gray-500 uppercase">FTM</div>
+          <div className="text-gray-300">{row.ftMade}</div>
+        </div>
+        <div>
+          <div className="text-gray-500 uppercase">PF</div>
+          <div className="text-gray-300">{row.pf}</div>
+        </div>
+        <div>
+          <div className="text-gray-500 uppercase">TF</div>
+          <div className="text-gray-300">{row.tf}</div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -400,11 +472,23 @@ export function PlayerStats({ userId, playerId, competitions, competitionUniqueK
           <EmptyState message="No match log available" />
         ) : (
           <div className="card-basketball overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Mobile: stacked cards */}
+            <div className="md:hidden">
+              {matchLog.map((row, idx) => (
+                <MatchLogMobileCard
+                  key={row.matchId || idx}
+                  row={row}
+                  competitions={competitions}
+                  summary={gameSummaries.get(row.matchId)}
+                  fallbackCompKey={compKey}
+                />
+              ))}
+            </div>
+            {/* Desktop: full table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-court-dark text-gray-400 text-xs uppercase">
-                    <th className="text-left px-4 py-3">Date</th>
                     <th className="text-center px-4 py-3">Match</th>
                     <th className="text-center px-3 py-3">PTS</th>
                     <th className="text-center px-3 py-3">2P</th>
@@ -416,7 +500,7 @@ export function PlayerStats({ userId, playerId, competitions, competitionUniqueK
                 </thead>
                 <tbody>
                   {matchLog.map((row, idx) => (
-                    <MatchLogRow
+                    <MatchLogDesktopRow
                       key={row.matchId || idx}
                       row={row}
                       competitions={competitions}

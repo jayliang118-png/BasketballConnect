@@ -153,6 +153,7 @@ export function computeLadder(
       teamId: t.teamId,
       teamName: t.teamName,
       teamUniqueKey: t.teamUniqueKey,
+      hasAdjustments: false,
       played: t.played,
       wins: t.wins,
       losses: t.losses,

@@ -110,11 +110,13 @@ export function TeamFixtures({
 
   const handleMatchClick = useCallback(
     (match: Match) => {
-      router.push(
-        `/orgs/${orgKey}/competitions/${compKey}/divisions/${divisionId}/teams/${teamKey}/games/${match.id}`
-      )
+      if (!match.id) return
+      const params = new URLSearchParams()
+      if (compKey) params.set('compKey', compKey)
+      if (competitionId) params.set('compId', String(competitionId))
+      router.push(`/games/${match.id}?${params.toString()}`)
     },
-    [router, orgKey, compKey, divisionId, teamKey],
+    [router, compKey, competitionId],
   )
 
   const setRoundRef = useCallback((index: number, el: HTMLDivElement | null) => {

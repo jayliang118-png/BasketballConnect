@@ -1,12 +1,18 @@
 /**
- * Ladder/standings types for team rankings computed from match data.
+ * Ladder/standings types for team rankings.
  */
+
+export interface LadderAdjustment {
+  readonly teamName: string
+  readonly description: string
+}
 
 export interface LadderEntry {
   readonly rank: number
   readonly teamId: number
   readonly teamName: string
   readonly teamUniqueKey: string | null
+  readonly hasAdjustments: boolean
   readonly played: number
   readonly wins: number
   readonly losses: number

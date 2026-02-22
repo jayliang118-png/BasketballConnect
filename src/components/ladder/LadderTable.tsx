@@ -31,9 +31,9 @@ interface LadderTableProps {
 }
 
 export function LadderTable({ competitionId, divisionId, orgKey, compKey }: LadderTableProps) {
-  const { entries, isLoading, error, refetch } = useLadder(
-    competitionId,
+  const { entries, adjustments, isLoading, error, refetch } = useLadder(
     divisionId,
+    compKey,
   )
 
   if (isLoading) return <LoadingSpinner message="Loading ladder..." />
@@ -41,37 +41,49 @@ export function LadderTable({ competitionId, divisionId, orgKey, compKey }: Ladd
   if (entries.length === 0) return <EmptyState message="No ladder data available" />
 
   return (
-    <div className="card-basketball overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-court-elevated/80 border-b border-court-border">
-              {COLUMN_HEADERS.map((col) => (
-                <th
-                  key={col.key}
-                  title={col.title}
-                  className={`px-2 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 ${
-                    col.key === 'team' ? 'text-left px-3' : 'text-center'
-                  } ${col.key === 'rank' ? 'px-3' : ''}`}
-                >
-                  {col.label}
-                </th>
+    <div className="space-y-4">
+      <div className="card-basketball overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-court-elevated/80 border-b border-court-border">
+                {COLUMN_HEADERS.map((col) => (
+                  <th
+                    key={col.key}
+                    title={col.title}
+                    className={`px-2 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 ${
+                      col.key === 'team' ? 'text-left px-3' : 'text-center'
+                    } ${col.key === 'rank' ? 'px-3' : ''}`}
+                  >
+                    {col.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((entry) => (
+                <LadderRow
+                  key={entry.teamId}
+                  entry={entry}
+                  orgKey={orgKey}
+                  compKey={compKey}
+                  divisionId={divisionId}
+                />
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((entry) => (
-              <LadderRow
-                key={entry.teamId}
-                entry={entry}
-                orgKey={orgKey}
-                compKey={compKey}
-                divisionId={divisionId}
-              />
-            ))}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {adjustments.length > 0 && (
+        <div className="card-basketball p-4 space-y-1">
+          {adjustments.map((adj, idx) => (
+            <p key={idx} className="text-sm text-stat-red">
+              {adj.description}
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -30,17 +30,17 @@ export function LadderRow({ entry, orgKey, compKey, divisionId }: LadderRowProps
       <td className="px-3 py-2.5 text-center whitespace-nowrap">
         <span className={getRankStyle(entry.rank)}>{entry.rank}</span>
       </td>
-      <td className="px-3 py-2.5 text-left whitespace-nowrap">
+      <td className="px-3 py-2.5 text-left">
         {teamHref ? (
           <Link
             href={teamHref}
-            className="text-sm font-medium text-gray-200 hover:text-hoop-orange transition-colors truncate max-w-[180px] inline-block"
+            className="text-sm font-medium text-gray-200 hover:text-hoop-orange transition-colors"
           >
-            {entry.teamName}
+            {entry.teamName}{entry.hasAdjustments && <span className="text-stat-red">*</span>}
           </Link>
         ) : (
-          <span className="text-sm font-medium text-gray-200 truncate max-w-[180px] inline-block">
-            {entry.teamName}
+          <span className="text-sm font-medium text-gray-200">
+            {entry.teamName}{entry.hasAdjustments && <span className="text-stat-red">*</span>}
           </span>
         )}
       </td>

@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { useFixtures } from '@/hooks/use-fixtures'
 import { RoundAccordion } from './RoundAccordion'
 import { MatchCard } from './MatchCard'
@@ -40,19 +41,46 @@ export function groupRoundsByName(rounds: readonly Round[]): readonly GroupedRou
 interface FixtureListProps {
   readonly competitionId: number
   readonly divisionId: number
+  readonly compKey?: string
   readonly onMatchClick?: (match: Match) => void
 }
 
-export function FixtureList({ competitionId, divisionId, onMatchClick }: FixtureListProps) {
+export function FixtureList({ competitionId, divisionId, compKey, onMatchClick }: FixtureListProps) {
+  const router = useRouter()
   const { data, isLoading, error, refetch } = useFixtures(
     competitionId,
     divisionId,
   )
 
+  const handleMatchClick = useCallback(
+    (match: Match) => {
+      if (onMatchClick) {
+        onMatchClick(match)
+        return
+      }
+      if (!match.id) return
+      const params = new URLSearchParams()
+      if (compKey) params.set('compKey', compKey)
+      if (competitionId) params.set('compId', String(competitionId))
+      router.push(`/games/${match.id}?${params.toString()}`)
+    },
+    [onMatchClick, compKey, competitionId, router],
+  )
+
   const groupedRounds = useMemo(
-    () => (data && Array.isArray(data) ? groupRoundsByName(data) : []),
+    () => (data && Array.isArray(data) ? [...groupRoundsByName(data)].reverse() : []),
     [data],
   )
+
+  const defaultOpenIndex = useMemo(() => {
+    const idx = groupedRounds.findIndex((round) =>
+      round.matches.some((m) =>
+        (m.team1Score > 0 || m.team2Score > 0) ||
+        m.matchStatus === 'Ended' || m.matchStatus === 'Final',
+      ),
+    )
+    return idx >= 0 ? idx : 0
+  }, [groupedRounds])
 
   if (isLoading) return <LoadingSpinner message="Loading fixtures..." />
   if (error) return <ErrorMessage message={error} onRetry={refetch} />
@@ -65,7 +93,7 @@ export function FixtureList({ competitionId, divisionId, onMatchClick }: Fixture
           key={round.name}
           roundName={round.name}
           matchCount={round.matches.length}
-          defaultOpen={index === 0}
+          defaultOpen={index === defaultOpenIndex}
         >
           {round.matches.map((match, mIdx) => (
             <MatchCard
@@ -85,7 +113,7 @@ export function FixtureList({ competitionId, divisionId, onMatchClick }: Fixture
               venueName={match.venueCourt?.venue?.name}
               venueCourtName={match.venueCourt?.name}
               matchStatus={match.matchStatus}
-              onClick={onMatchClick ? () => onMatchClick(match) : undefined}
+              onClick={() => handleMatchClick(match)}
             />
           ))}
         </RoundAccordion>
