@@ -60,3 +60,9 @@ export {
   UserScoringSummarySchema,
   UserScoringSummaryResponseSchema,
 } from './stats.schema'
+
+export {
+  NotificationTypeSchema,
+  NotificationSchema,
+  NotificationStorageSchema,
+} from './notification.schema'

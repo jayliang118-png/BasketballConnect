@@ -64,3 +64,11 @@ export type {
   SearchResultGroup,
   GlobalSearchIndexValue,
 } from './global-search'
+
+export type {
+  Notification,
+  NotificationType,
+  NotificationsState,
+} from './notification'
+
+export { NOTIFICATION_CAP, NOTIFICATION_TTL_MS } from './notification'
