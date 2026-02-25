@@ -360,6 +360,141 @@ describe('NotificationContext', () => {
     })
   })
 
+  describe('markAsRead', () => {
+    it('marks a specific notification as read', async () => {
+      let captured: NotificationContextValue | null = null
+
+      await act(async () => {
+        render(
+          <NotificationProvider>
+            <TestConsumer onRender={(ctx) => { captured = ctx }} />
+          </NotificationProvider>,
+        )
+      })
+
+      await act(async () => {
+        captured!.addNotification(makeNotificationInput())
+      })
+
+      const id = captured!.state.notifications[0].id
+      expect(captured!.state.notifications[0].read).toBe(false)
+
+      await act(async () => {
+        captured!.markAsRead(id)
+      })
+
+      expect(captured!.state.notifications[0].read).toBe(true)
+    })
+
+    it('decrements unreadCount when notification is marked as read', async () => {
+      let captured: NotificationContextValue | null = null
+
+      await act(async () => {
+        render(
+          <NotificationProvider>
+            <TestConsumer onRender={(ctx) => { captured = ctx }} />
+          </NotificationProvider>,
+        )
+      })
+
+      await act(async () => {
+        captured!.addNotification(makeNotificationInput({ message: 'First' }))
+      })
+      await act(async () => {
+        captured!.addNotification(makeNotificationInput({ message: 'Second' }))
+      })
+
+      expect(captured!.unreadCount).toBe(2)
+
+      const id = captured!.state.notifications[0].id
+
+      await act(async () => {
+        captured!.markAsRead(id)
+      })
+
+      expect(captured!.unreadCount).toBe(1)
+    })
+
+    it('does not affect other notifications', async () => {
+      let captured: NotificationContextValue | null = null
+
+      await act(async () => {
+        render(
+          <NotificationProvider>
+            <TestConsumer onRender={(ctx) => { captured = ctx }} />
+          </NotificationProvider>,
+        )
+      })
+
+      await act(async () => {
+        captured!.addNotification(makeNotificationInput({ message: 'First' }))
+      })
+      await act(async () => {
+        captured!.addNotification(makeNotificationInput({ message: 'Second' }))
+      })
+
+      const firstId = captured!.state.notifications[0].id
+
+      await act(async () => {
+        captured!.markAsRead(firstId)
+      })
+
+      expect(captured!.state.notifications[0].read).toBe(true)
+      expect(captured!.state.notifications[1].read).toBe(false)
+    })
+
+    it('is a no-op for non-existent id', async () => {
+      let captured: NotificationContextValue | null = null
+
+      await act(async () => {
+        render(
+          <NotificationProvider>
+            <TestConsumer onRender={(ctx) => { captured = ctx }} />
+          </NotificationProvider>,
+        )
+      })
+
+      await act(async () => {
+        captured!.addNotification(makeNotificationInput())
+      })
+
+      await act(async () => {
+        captured!.markAsRead('nonexistent')
+      })
+
+      expect(captured!.state.notifications).toHaveLength(1)
+      expect(captured!.state.notifications[0].read).toBe(false)
+    })
+
+    it('persists read status to localStorage', async () => {
+      let captured: NotificationContextValue | null = null
+
+      await act(async () => {
+        render(
+          <NotificationProvider>
+            <TestConsumer onRender={(ctx) => { captured = ctx }} />
+          </NotificationProvider>,
+        )
+      })
+
+      await act(async () => {
+        captured!.addNotification(makeNotificationInput())
+      })
+
+      const id = captured!.state.notifications[0].id
+
+      await act(async () => {
+        captured!.markAsRead(id)
+      })
+
+      const stored = localStorage.getItem(STORAGE_KEY)
+      expect(stored).not.toBeNull()
+
+      const parsed = JSON.parse(stored!)
+      expect(parsed.notifications[0].read).toBe(true)
+    })
+  })
+
   describe('useNotifications hook', () => {
     it('throws when used outside provider', () => {
       const consoleSpy = jest
