@@ -26,6 +26,8 @@ export const VenueCourtSchema = z
         shortName: z.string(),
         street1: z.string(),
         suburb: z.string(),
+        lat: z.number().optional(),
+        lng: z.number().optional(),
       })
       .passthrough(),
   })

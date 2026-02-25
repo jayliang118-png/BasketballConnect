@@ -183,6 +183,8 @@ export function TeamFixtures({
                 startTime={match.startTime}
                 venueName={match.venueCourt?.venue?.name}
                 venueCourtName={match.venueCourt?.name}
+                venueLat={match.venueCourt?.venue?.lat}
+                venueLng={match.venueCourt?.venue?.lng}
                 matchStatus={match.matchStatus}
                 onClick={() => handleMatchClick(match)}
               />

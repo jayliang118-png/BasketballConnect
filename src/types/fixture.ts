@@ -22,6 +22,8 @@ export interface VenueCourt {
     readonly shortName: string
     readonly street1: string
     readonly suburb: string
+    readonly lat?: number
+    readonly lng?: number
   }
   readonly [key: string]: unknown
 }
