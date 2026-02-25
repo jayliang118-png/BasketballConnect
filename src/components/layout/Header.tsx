@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { SearchInput } from '@/components/common/SearchInput'
 import { GlobalSearchDropdown } from '@/components/search/GlobalSearchDropdown'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { FavoritesHeaderButton } from '@/components/favorites/FavoritesHeaderButton'
 import { useSearch } from '@/hooks/use-search'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -89,6 +90,7 @@ export function Header() {
               />
             )}
           </div>
+          <NotificationBell />
           <ThemeToggle />
           <FavoritesHeaderButton />
         </div>
