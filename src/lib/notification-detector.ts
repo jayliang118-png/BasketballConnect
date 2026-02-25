@@ -27,7 +27,7 @@ export interface DetectionResult {
   readonly link: string
 }
 
-const TWENTY_FOUR_HOURS_MS = 86_400_000
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000
 
 /**
  * Detects a game start event when a match transitions from SCHEDULED to LIVE.
@@ -71,8 +71,8 @@ export function detectGameEnd(
 }
 
 /**
- * Detects an upcoming fixture event when a scheduled match starts within 24 hours.
- * Returns null if the match is not scheduled, already past, or more than 24 hours away.
+ * Detects an upcoming fixture event when a scheduled match starts within 3 days.
+ * Returns null if the match is not scheduled, already past, or more than 3 days away.
  */
 export function detectUpcomingFixture(
   current: MatchSnapshot,
@@ -85,7 +85,7 @@ export function detectUpcomingFixture(
   const startDate = new Date(current.startTime)
   const timeUntilStart = startDate.getTime() - now.getTime()
 
-  if (timeUntilStart <= 0 || timeUntilStart > TWENTY_FOUR_HOURS_MS) {
+  if (timeUntilStart <= 0 || timeUntilStart > THREE_DAYS_MS) {
     return null
   }
 
@@ -94,10 +94,21 @@ export function detectUpcomingFixture(
     minute: '2-digit',
   })
 
+  const isToday = startDate.toDateString() === now.toDateString()
+  const tomorrow = new Date(now)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const isTomorrow = startDate.toDateString() === tomorrow.toDateString()
+
+  const dayLabel = isToday
+    ? 'today'
+    : isTomorrow
+      ? 'tomorrow'
+      : startDate.toLocaleDateString('en-AU', { weekday: 'short', month: 'short', day: 'numeric' })
+
   return {
     type: 'UPCOMING_FIXTURE',
     matchId: current.matchId,
-    message: `${current.team1Name} vs ${current.team2Name} starts at ${formattedTime}`,
+    message: `${current.team1Name} vs ${current.team2Name} — ${dayLabel} at ${formattedTime}`,
     link: `/games/${current.matchId}`,
   }
 }

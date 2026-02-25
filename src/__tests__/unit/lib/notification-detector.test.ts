@@ -151,8 +151,32 @@ describe('notification-detector', () => {
       expect(result!.type).toBe('UPCOMING_FIXTURE')
     })
 
-    it('returns null when match starts in 36 hours', () => {
+    it('returns result when match starts in 36 hours (within 3-day window)', () => {
       const now = new Date('2026-02-24T06:00:00.000Z')
+      const snapshot = makeSnapshot({
+        status: 'SCHEDULED',
+        startTime: '2026-02-25T18:00:00.000Z',
+      })
+      const result = detectUpcomingFixture(snapshot, now)
+
+      expect(result).not.toBeNull()
+      expect(result!.type).toBe('UPCOMING_FIXTURE')
+    })
+
+    it('returns result when match starts in 2 days', () => {
+      const now = new Date('2026-02-23T12:00:00.000Z')
+      const snapshot = makeSnapshot({
+        status: 'SCHEDULED',
+        startTime: '2026-02-25T18:00:00.000Z',
+      })
+      const result = detectUpcomingFixture(snapshot, now)
+
+      expect(result).not.toBeNull()
+      expect(result!.type).toBe('UPCOMING_FIXTURE')
+    })
+
+    it('returns null when match starts in 4 days (outside 3-day window)', () => {
+      const now = new Date('2026-02-21T06:00:00.000Z')
       const snapshot = makeSnapshot({
         status: 'SCHEDULED',
         startTime: '2026-02-25T18:00:00.000Z',
@@ -195,15 +219,49 @@ describe('notification-detector', () => {
       expect(result).toBeNull()
     })
 
-    it('message includes formatted start time', () => {
-      const now = new Date('2026-02-25T06:00:00.000Z')
+    it('message says "today" for same-day match', () => {
+      // Both now and startTime resolve to the same local date
+      const now = new Date('2026-02-25T00:00:00.000Z')
       const snapshot = makeSnapshot({
         status: 'SCHEDULED',
-        startTime: '2026-02-25T18:00:00.000Z',
+        startTime: '2026-02-25T08:00:00.000Z',
       })
       const result = detectUpcomingFixture(snapshot, now)
 
-      expect(result!.message).toContain('Eagles vs Hawks starts at')
+      expect(result!.message).toContain('Eagles vs Hawks')
+      expect(result!.message).toContain('today at')
+    })
+
+    it('message says "tomorrow" for next-day match', () => {
+      // now is one local day before startTime
+      const now = new Date('2026-02-25T00:00:00.000Z')
+      const startDate = new Date(now)
+      startDate.setDate(startDate.getDate() + 1)
+      startDate.setHours(startDate.getHours() + 4)
+      const snapshot = makeSnapshot({
+        status: 'SCHEDULED',
+        startTime: startDate.toISOString(),
+      })
+      const result = detectUpcomingFixture(snapshot, now)
+
+      expect(result!.message).toContain('Eagles vs Hawks')
+      expect(result!.message).toContain('tomorrow at')
+    })
+
+    it('message includes date for matches 2+ days away', () => {
+      const now = new Date('2026-02-23T00:00:00.000Z')
+      const startDate = new Date(now)
+      startDate.setDate(startDate.getDate() + 2)
+      startDate.setHours(startDate.getHours() + 4)
+      const snapshot = makeSnapshot({
+        status: 'SCHEDULED',
+        startTime: startDate.toISOString(),
+      })
+      const result = detectUpcomingFixture(snapshot, now)
+
+      expect(result!.message).toContain('Eagles vs Hawks')
+      expect(result!.message).not.toContain('today')
+      expect(result!.message).not.toContain('tomorrow')
     })
 
     it('link is /games/{matchId}', () => {
