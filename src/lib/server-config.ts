@@ -28,4 +28,21 @@ function createServerConfig(): ServerConfig {
   return result.data
 }
 
-export const serverConfig = createServerConfig()
+let _cached: ServerConfig | null = null
+
+export function getServerConfig(): ServerConfig {
+  if (!_cached) {
+    _cached = createServerConfig()
+  }
+  return _cached
+}
+
+/**
+ * @deprecated Use getServerConfig() instead — eager evaluation breaks
+ * builds when env vars are not available at module-load time.
+ */
+export const serverConfig = new Proxy({} as ServerConfig, {
+  get(_target, prop: string) {
+    return getServerConfig()[prop as keyof ServerConfig]
+  },
+})
