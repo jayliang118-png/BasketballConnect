@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals'
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'
 import type { DivisionGroup } from '@/lib/favorite-url-parser'
 
 const mockFetchFixtures = jest.fn()
@@ -94,19 +94,21 @@ describe('notification-poll-orchestrator', () => {
     const orchestrator = createPollOrchestrator(resolver)
     const context = makePollContext()
 
-    // First poll: scheduled
+    // First poll: scheduled — UPCOMING_FIXTURE fires (exempt from suppression)
     mockFetchFixtures.mockResolvedValue([
       makeRound([makeMatch({ matchStatus: 'Scheduled' })]),
     ])
     await orchestrator.executePoll([MOCK_DIVISION], context)
 
-    // Second poll: now live
+    // Second poll: now live — GAME_START fires
     mockFetchFixtures.mockResolvedValue([
       makeRound([makeMatch({ matchStatus: 'Live' })]),
     ])
     await orchestrator.executePoll([MOCK_DIVISION], context)
 
-    expect(context.addNotification).toHaveBeenCalledTimes(1)
+    const calls = (context.addNotification as jest.Mock).mock.calls
+    const types = calls.map((c: unknown[]) => (c[0] as { type: string }).type)
+    expect(types).toContain('GAME_START')
     expect(context.addNotification).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'GAME_START',
@@ -141,18 +143,12 @@ describe('notification-poll-orchestrator', () => {
     )
   })
 
-  it('upcoming fixture within 24h generates UPCOMING_FIXTURE notification on non-first poll', async () => {
+  it('upcoming fixture within 24h generates UPCOMING_FIXTURE notification even on first poll', async () => {
     const resolver = makeMockResolver()
     const orchestrator = createPollOrchestrator(resolver)
     const context = makePollContext()
 
-    // First poll: scheduled match in the future
-    mockFetchFixtures.mockResolvedValue([
-      makeRound([makeMatch({ matchStatus: 'Scheduled', startTime: '2026-02-25T18:00:00.000Z' })]),
-    ])
-    await orchestrator.executePoll([MOCK_DIVISION], context)
-
-    // Second poll: same match still scheduled
+    // First poll: scheduled match within 24h — should fire immediately (not suppressed)
     mockFetchFixtures.mockResolvedValue([
       makeRound([makeMatch({ matchStatus: 'Scheduled', startTime: '2026-02-25T18:00:00.000Z' })]),
     ])
@@ -164,6 +160,26 @@ describe('notification-poll-orchestrator', () => {
         matchId: 1001,
       }),
     )
+  })
+
+  it('first poll suppresses GAME_START but not UPCOMING_FIXTURE', async () => {
+    const resolver = makeMockResolver()
+    const orchestrator = createPollOrchestrator(resolver)
+    const context = makePollContext()
+
+    // First poll: two matches — one scheduled (upcoming), one already live
+    // Upcoming fixture should fire, game start (no transition) should not
+    mockFetchFixtures.mockResolvedValue([
+      makeRound([
+        makeMatch({ id: 1001, matchStatus: 'Scheduled', startTime: '2026-02-25T18:00:00.000Z' }),
+        makeMatch({ id: 2002, matchStatus: 'Live', team1: { id: 1, name: 'Eagles', teamUniqueKey: 'team-eagles-key', alias: null, logoUrl: null }, team2: { id: 2, name: 'Hawks', teamUniqueKey: 'team-hawks-key', alias: null, logoUrl: null } }),
+      ]),
+    ])
+    await orchestrator.executePoll([MOCK_DIVISION], context)
+
+    const calls = (context.addNotification as jest.Mock).mock.calls
+    expect(calls.length).toBe(1)
+    expect(calls[0][0].type).toBe('UPCOMING_FIXTURE')
   })
 
   it('deduplication: same event on third poll does not generate duplicate', async () => {
@@ -229,10 +245,11 @@ describe('notification-poll-orchestrator', () => {
     ])
     await orchestrator.executePoll([MOCK_DIVISION], context)
 
-    // Only one GAME_START notification for the favorited team match
+    // Only favorited team match (1001) gets notifications — no notifications for non-favorited match (2002)
     const calls = (context.addNotification as jest.Mock).mock.calls
-    expect(calls.length).toBe(1)
-    expect(calls[0][0].matchId).toBe(1001)
+    const matchIds = calls.map((c: unknown[]) => (c[0] as { matchId: number }).matchId)
+    expect(matchIds.every((id: number) => id === 1001)).toBe(true)
+    expect(matchIds).not.toContain(2002)
   })
 
   it('non-favorited team match is ignored even with status change', async () => {

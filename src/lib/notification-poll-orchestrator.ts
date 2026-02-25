@@ -95,7 +95,7 @@ export function createPollOrchestrator(
     context: PollContext,
   ): void {
     if (result === null) return
-    if (firstPoll) return
+    if (firstPoll && result.type !== 'UPCOMING_FIXTURE') return
     if (deduplicator.hasSeen(result.matchId, result.type)) return
 
     context.addNotification({
