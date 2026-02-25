@@ -38,6 +38,22 @@ interface PollOrchestrator {
 }
 
 /**
+ * Returns true when the snapshot involves a favorited team.
+ * Checks both GUID teamUniqueKey and fallback `team-{numericId}` formats,
+ * since favorites may be stored in either format.
+ */
+function isRelevantToFavorites(
+  snapshot: MatchSnapshot,
+  favoriteTeamKeys: ReadonlySet<string>,
+): boolean {
+  if (snapshot.team1Key !== null && favoriteTeamKeys.has(snapshot.team1Key)) return true
+  if (snapshot.team2Key !== null && favoriteTeamKeys.has(snapshot.team2Key)) return true
+  if (snapshot.team1Id !== null && favoriteTeamKeys.has(`team-${snapshot.team1Id}`)) return true
+  if (snapshot.team2Id !== null && favoriteTeamKeys.has(`team-${snapshot.team2Id}`)) return true
+  return false
+}
+
+/**
  * Creates a poll orchestrator that coordinates fixture fetching, match
  * detection, and notification generation across all favorited divisions.
  *
@@ -85,6 +101,8 @@ export function createPollOrchestrator(
           team2Score: match.team2Score,
           team1Key: match.team1.teamUniqueKey,
           team2Key: match.team2.teamUniqueKey,
+          team1Id: match.team1.id ?? null,
+          team2Id: match.team2.id ?? null,
         }),
       ),
     )
@@ -122,11 +140,7 @@ export function createPollOrchestrator(
     )
 
     const relevantSnapshots = allSnapshots.filter(
-      (snapshot) =>
-        (snapshot.team1Key !== null &&
-          context.favoriteTeamKeys.has(snapshot.team1Key)) ||
-        (snapshot.team2Key !== null &&
-          context.favoriteTeamKeys.has(snapshot.team2Key)),
+      (snapshot) => isRelevantToFavorites(snapshot, context.favoriteTeamKeys),
     )
 
     const now = new Date()

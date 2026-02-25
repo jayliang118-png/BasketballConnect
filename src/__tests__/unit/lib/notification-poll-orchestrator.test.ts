@@ -307,6 +307,39 @@ describe('notification-poll-orchestrator', () => {
     )
   })
 
+  it('matches favorited teams using team-{numericId} fallback format', async () => {
+    const resolver = makeMockResolver()
+    const orchestrator = createPollOrchestrator(resolver)
+    // Favorites stored as team-{numericId} instead of GUID teamUniqueKey
+    const context = makePollContext({
+      favoriteTeamKeys: new Set(['team-1']),
+    })
+
+    // First poll with GUID teamUniqueKey (not matching favorite ID directly)
+    mockFetchFixtures.mockResolvedValue([
+      makeRound([makeMatch({ matchStatus: 'Scheduled', startTime: '2026-02-25T18:00:00.000Z' })]),
+    ])
+    await orchestrator.executePoll([MOCK_DIVISION], context)
+
+    // Should still match via numeric ID fallback and fire UPCOMING_FIXTURE
+    expect(context.addNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'UPCOMING_FIXTURE' }),
+    )
+  })
+
+  it('handles null matchStatus without crashing', async () => {
+    const resolver = makeMockResolver()
+    const orchestrator = createPollOrchestrator(resolver)
+    const context = makePollContext()
+
+    mockFetchFixtures.mockResolvedValue([
+      makeRound([makeMatch({ matchStatus: null })]),
+    ])
+
+    // Should not throw
+    await orchestrator.executePoll([MOCK_DIVISION], context)
+  })
+
   it('resolver returning null skips that division', async () => {
     const resolver = makeMockResolver(null)
     const orchestrator = createPollOrchestrator(resolver)

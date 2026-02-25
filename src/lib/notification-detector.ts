@@ -16,6 +16,8 @@ export interface MatchSnapshot {
   readonly team2Score: number
   readonly team1Key: string | null
   readonly team2Key: string | null
+  readonly team1Id: number | null
+  readonly team2Id: number | null
 }
 
 export interface DetectionResult {

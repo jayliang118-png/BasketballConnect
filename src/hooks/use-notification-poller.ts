@@ -37,13 +37,13 @@ export function useNotificationPoller(
   addNotificationRef.current = addNotification
 
   const executePoll = useCallback(() => {
+    const teamItems = state.items.filter((item) => item.type === 'team')
+
     const divisions = groupFavoritesByDivision(state.items)
     if (divisions.length === 0) return
 
     const favoriteTeamKeys = new Set(
-      state.items
-        .filter((item) => item.type === 'team')
-        .map((item) => item.id),
+      teamItems.map((item) => item.id),
     )
 
     orchestratorRef.current
@@ -52,7 +52,7 @@ export function useNotificationPoller(
         addNotification: addNotificationRef.current,
       })
       .catch(() => {
-        // Polling errors are non-fatal; next cycle will retry
+        // Poll errors are non-fatal; next cycle will retry
       })
   }, [state.items])
 

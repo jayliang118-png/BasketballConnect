@@ -47,6 +47,18 @@ describe('match-status', () => {
       expect(normalizeMatchStatus('Live')).toBe('LIVE')
       expect(normalizeMatchStatus('Scheduled')).toBe('SCHEDULED')
     })
+
+    it('returns UNKNOWN for null input', () => {
+      expect(normalizeMatchStatus(null as unknown as string)).toBe('UNKNOWN')
+    })
+
+    it('returns UNKNOWN for undefined input', () => {
+      expect(normalizeMatchStatus(undefined as unknown as string)).toBe('UNKNOWN')
+    })
+
+    it('returns UNKNOWN for empty string', () => {
+      expect(normalizeMatchStatus('')).toBe('UNKNOWN')
+    })
   })
 
   describe('isLiveStatus', () => {

@@ -18,6 +18,8 @@ function makeSnapshot(overrides: Partial<MatchSnapshot> = {}): MatchSnapshot {
     team2Score: 0,
     team1Key: 'team-eagles-key',
     team2Key: 'team-hawks-key',
+    team1Id: 1,
+    team2Id: 2,
     ...overrides,
   }
 }

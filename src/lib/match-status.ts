@@ -16,9 +16,10 @@ const STATUS_MAP: Readonly<Record<string, NormalizedMatchStatus>> = {
 
 /**
  * Normalizes raw API match status strings to canonical values.
- * Case-insensitive. Unknown values map to 'UNKNOWN'.
+ * Case-insensitive. Null, undefined, or unknown values map to 'UNKNOWN'.
  */
-export function normalizeMatchStatus(raw: string): NormalizedMatchStatus {
+export function normalizeMatchStatus(raw: string | null | undefined): NormalizedMatchStatus {
+  if (!raw) return 'UNKNOWN'
   return STATUS_MAP[raw.toUpperCase()] ?? 'UNKNOWN'
 }
 
