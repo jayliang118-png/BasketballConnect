@@ -54,9 +54,12 @@ function makeMockResolver(resolvedId: number | null = 100) {
   }
 }
 
+const EAGLES_TEAM_URL = '/orgs/bca/competitions/summer-2026/divisions/10/teams/team-eagles-key'
+
 function makePollContext(overrides: Partial<PollContext> = {}): PollContext {
   return {
     favoriteTeamKeys: new Set(['team-eagles-key']),
+    favoriteTeamUrls: new Map([['team-eagles-key', EAGLES_TEAM_URL]]),
     addNotification: jest.fn(),
     ...overrides,
   }
@@ -338,6 +341,63 @@ describe('notification-poll-orchestrator', () => {
 
     // Should not throw
     await orchestrator.executePoll([MOCK_DIVISION], context)
+  })
+
+  it('existing notifications seed deduplicator to prevent duplicates on refresh', async () => {
+    const resolver = makeMockResolver()
+    const orchestrator = createPollOrchestrator(resolver)
+    const context = makePollContext({
+      existingNotifications: [
+        { matchId: 1001, type: 'UPCOMING_FIXTURE' },
+      ],
+    })
+
+    // First poll: scheduled match within 3 days — but already exists in notifications
+    mockFetchFixtures.mockResolvedValue([
+      makeRound([makeMatch({ matchStatus: 'Scheduled', startTime: '2026-02-25T18:00:00.000Z' })]),
+    ])
+    await orchestrator.executePoll([MOCK_DIVISION], context)
+
+    // Should NOT re-add the notification since it was seeded from existing
+    expect(context.addNotification).not.toHaveBeenCalled()
+  })
+
+  it('notification link points to favorited team fixtures page', async () => {
+    const resolver = makeMockResolver()
+    const orchestrator = createPollOrchestrator(resolver)
+    const context = makePollContext()
+
+    mockFetchFixtures.mockResolvedValue([
+      makeRound([makeMatch({ matchStatus: 'Scheduled', startTime: '2026-02-25T18:00:00.000Z' })]),
+    ])
+    await orchestrator.executePoll([MOCK_DIVISION], context)
+
+    expect(context.addNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        link: EAGLES_TEAM_URL,
+      }),
+    )
+  })
+
+  it('notification link uses team-{numericId} URL when matched by numeric ID', async () => {
+    const resolver = makeMockResolver()
+    const orchestrator = createPollOrchestrator(resolver)
+    const teamUrl = '/orgs/bca/competitions/summer-2026/divisions/10/teams/eagles'
+    const context = makePollContext({
+      favoriteTeamKeys: new Set(['team-1']),
+      favoriteTeamUrls: new Map([['team-1', teamUrl]]),
+    })
+
+    mockFetchFixtures.mockResolvedValue([
+      makeRound([makeMatch({ matchStatus: 'Scheduled', startTime: '2026-02-25T18:00:00.000Z' })]),
+    ])
+    await orchestrator.executePoll([MOCK_DIVISION], context)
+
+    expect(context.addNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        link: teamUrl,
+      }),
+    )
   })
 
   it('resolver returning null skips that division', async () => {

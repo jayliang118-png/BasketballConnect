@@ -78,7 +78,7 @@ export function detectUpcomingFixture(
   current: MatchSnapshot,
   now: Date,
 ): DetectionResult | null {
-  if (current.status !== 'SCHEDULED') {
+  if (current.status !== 'SCHEDULED' && current.status !== 'UNKNOWN') {
     return null
   }
 

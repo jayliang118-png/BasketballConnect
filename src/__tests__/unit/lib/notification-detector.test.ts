@@ -197,6 +197,29 @@ describe('notification-detector', () => {
       expect(result).toBeNull()
     })
 
+    it('returns result when match status is UNKNOWN and starts in the future', () => {
+      const now = new Date('2026-02-25T06:00:00.000Z')
+      const snapshot = makeSnapshot({
+        status: 'UNKNOWN',
+        startTime: '2026-02-25T18:00:00.000Z',
+      })
+      const result = detectUpcomingFixture(snapshot, now)
+
+      expect(result).not.toBeNull()
+      expect(result!.type).toBe('UPCOMING_FIXTURE')
+    })
+
+    it('returns null when match status is UNKNOWN and start time is in the past', () => {
+      const now = new Date('2026-02-25T20:00:00.000Z')
+      const snapshot = makeSnapshot({
+        status: 'UNKNOWN',
+        startTime: '2026-02-25T18:00:00.000Z',
+      })
+      const result = detectUpcomingFixture(snapshot, now)
+
+      expect(result).toBeNull()
+    })
+
     it('returns null when match status is LIVE', () => {
       const now = new Date('2026-02-25T17:00:00.000Z')
       const snapshot = makeSnapshot({

@@ -26,7 +26,7 @@ export function useNotificationPoller(
   const pollingInterval = options?.pollingInterval ?? DEFAULT_POLL_INTERVAL
 
   const { state } = useFavorites()
-  const { addNotification, isHydrated: notifHydrated } = useNotifications()
+  const { addNotification, isHydrated: notifHydrated, state: notifState } = useNotifications()
 
   const resolverRef = useRef(createCompetitionResolver())
   const orchestratorRef = useRef(
@@ -35,6 +35,9 @@ export function useNotificationPoller(
 
   const addNotificationRef = useRef(addNotification)
   addNotificationRef.current = addNotification
+
+  const notifStateRef = useRef(notifState)
+  notifStateRef.current = notifState
 
   const executePoll = useCallback(() => {
     const teamItems = state.items.filter((item) => item.type === 'team')
@@ -46,10 +49,18 @@ export function useNotificationPoller(
       teamItems.map((item) => item.id),
     )
 
+    const favoriteTeamUrls = new Map(
+      teamItems
+        .filter((item) => item.url)
+        .map((item) => [item.id, item.url!]),
+    )
+
     orchestratorRef.current
       .executePoll(divisions, {
         favoriteTeamKeys,
+        favoriteTeamUrls,
         addNotification: addNotificationRef.current,
+        existingNotifications: notifStateRef.current.notifications,
       })
       .catch(() => {
         // Poll errors are non-fatal; next cycle will retry

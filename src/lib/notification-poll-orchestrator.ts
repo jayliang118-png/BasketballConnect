@@ -22,7 +22,9 @@ type AddNotificationFn = (
 
 export interface PollContext {
   readonly favoriteTeamKeys: ReadonlySet<string>
+  readonly favoriteTeamUrls: ReadonlyMap<string, string>
   readonly addNotification: AddNotificationFn
+  readonly existingNotifications?: readonly { readonly matchId?: number; readonly type: string }[]
 }
 
 interface CompetitionResolver {
@@ -51,6 +53,30 @@ function isRelevantToFavorites(
   if (snapshot.team1Id !== null && favoriteTeamKeys.has(`team-${snapshot.team1Id}`)) return true
   if (snapshot.team2Id !== null && favoriteTeamKeys.has(`team-${snapshot.team2Id}`)) return true
   return false
+}
+
+/**
+ * Resolves the team fixtures page URL for a snapshot by finding the first
+ * favorited team that matches the snapshot's team keys or numeric IDs.
+ * Returns the team's favorites URL if found, otherwise the detector's link.
+ */
+function resolveTeamUrl(
+  snapshot: MatchSnapshot,
+  favoriteTeamUrls: ReadonlyMap<string, string>,
+): string | null {
+  if (snapshot.team1Key !== null && favoriteTeamUrls.has(snapshot.team1Key)) {
+    return favoriteTeamUrls.get(snapshot.team1Key)!
+  }
+  if (snapshot.team2Key !== null && favoriteTeamUrls.has(snapshot.team2Key)) {
+    return favoriteTeamUrls.get(snapshot.team2Key)!
+  }
+  if (snapshot.team1Id !== null && favoriteTeamUrls.has(`team-${snapshot.team1Id}`)) {
+    return favoriteTeamUrls.get(`team-${snapshot.team1Id}`)!
+  }
+  if (snapshot.team2Id !== null && favoriteTeamUrls.has(`team-${snapshot.team2Id}`)) {
+    return favoriteTeamUrls.get(`team-${snapshot.team2Id}`)!
+  }
+  return null
 }
 
 /**
@@ -110,17 +136,20 @@ export function createPollOrchestrator(
 
   function processDetectionResult(
     result: DetectionResult | null,
+    snapshot: MatchSnapshot,
     context: PollContext,
   ): void {
     if (result === null) return
     if (firstPoll && result.type !== 'UPCOMING_FIXTURE') return
     if (deduplicator.hasSeen(result.matchId, result.type)) return
 
+    const teamUrl = resolveTeamUrl(snapshot, context.favoriteTeamUrls)
+
     context.addNotification({
       type: result.type,
       timestamp: new Date().toISOString(),
       message: result.message,
-      link: result.link,
+      link: teamUrl ?? result.link,
       matchId: result.matchId,
     })
 
@@ -139,6 +168,14 @@ export function createPollOrchestrator(
       result.status === 'fulfilled' ? result.value : [],
     )
 
+    if (firstPoll && context.existingNotifications) {
+      for (const n of context.existingNotifications) {
+        if (n.matchId !== undefined) {
+          deduplicator.markSeen(n.matchId, n.type as Notification['type'])
+        }
+      }
+    }
+
     const relevantSnapshots = allSnapshots.filter(
       (snapshot) => isRelevantToFavorites(snapshot, context.favoriteTeamKeys),
     )
@@ -150,14 +187,17 @@ export function createPollOrchestrator(
 
       processDetectionResult(
         detectGameStart(snapshot, previousStatus),
+        snapshot,
         context,
       )
       processDetectionResult(
         detectGameEnd(snapshot, previousStatus),
+        snapshot,
         context,
       )
       processDetectionResult(
         detectUpcomingFixture(snapshot, now),
+        snapshot,
         context,
       )
 
