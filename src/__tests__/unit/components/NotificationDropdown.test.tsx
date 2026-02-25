@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'
+import '@testing-library/jest-dom/jest-globals'
 import { render, screen, act, fireEvent } from '@testing-library/react'
 import React from 'react'
 import { NotificationProvider } from '@/context/NotificationContext'
