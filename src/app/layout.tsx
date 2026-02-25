@@ -4,7 +4,6 @@ import { ClientProviders } from '@/components/providers/ClientProviders'
 import { Header } from '@/components/layout/Header'
 import { BreadcrumbsFromUrl } from '@/components/layout/BreadcrumbsFromUrl'
 import { Footer } from '@/components/layout/Footer'
-import { ChatPanel } from '@/components/chat/ChatPanel'
 import './globals.css'
 
 const geistSans = Geist({
@@ -57,7 +56,6 @@ export default function RootLayout({
             {children}
             <Footer />
           </div>
-          <ChatPanel />
         </ClientProviders>
       </body>
     </html>
