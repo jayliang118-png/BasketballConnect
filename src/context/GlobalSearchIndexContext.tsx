@@ -5,6 +5,25 @@ import type { SearchableEntity, GlobalSearchIndexValue } from '@/types/global-se
 import { buildEntityKey, filterEntitiesByTerm } from '@/lib/search-index-helpers'
 import { loadCachedIndex, saveCachedIndex } from '@/lib/search-index-cache'
 
+/**
+ * Holds stable function references (register, search) that never change identity.
+ * Consumers that only need to call register/search subscribe here and avoid
+ * re-rendering when entityCount changes.
+ */
+export const GlobalSearchActionsContext = createContext<Pick<
+  GlobalSearchIndexValue,
+  'register' | 'search'
+> | null>(null)
+
+/**
+ * Holds the changing entityCount value. Only components that display the count
+ * subscribe to this context, keeping re-renders minimal.
+ */
+export const GlobalSearchDataContext = createContext<{ entityCount: number } | null>(null)
+
+/**
+ * Combined context kept for backwards-compat with useGlobalSearchIndex().
+ */
 export const GlobalSearchIndexContext = createContext<GlobalSearchIndexValue | null>(null)
 
 interface GlobalSearchIndexProviderProps {
@@ -70,6 +89,13 @@ export function GlobalSearchIndexProvider({ children }: GlobalSearchIndexProvide
     []
   )
 
+  // Stable actions object — register and search never change identity
+  const actions = useMemo(() => ({ register, search }), [register, search])
+
+  // Changing data object — only entityCount triggers re-renders for subscribers
+  const data = useMemo(() => ({ entityCount: entities.size }), [entities.size])
+
+  // Combined value for backwards-compat
   const value = useMemo<GlobalSearchIndexValue>(
     () => ({
       register,
@@ -80,8 +106,12 @@ export function GlobalSearchIndexProvider({ children }: GlobalSearchIndexProvide
   )
 
   return (
-    <GlobalSearchIndexContext.Provider value={value}>
-      {children}
-    </GlobalSearchIndexContext.Provider>
+    <GlobalSearchActionsContext.Provider value={actions}>
+      <GlobalSearchDataContext.Provider value={data}>
+        <GlobalSearchIndexContext.Provider value={value}>
+          {children}
+        </GlobalSearchIndexContext.Provider>
+      </GlobalSearchDataContext.Provider>
+    </GlobalSearchActionsContext.Provider>
   )
 }

@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { useGlobalSearchIndex } from './use-global-search-index'
+import { useGlobalSearchActions } from './use-global-search-index'
+import { isCacheValid } from '@/lib/search-index-cache'
 import type { SearchableEntity } from '@/types/global-search'
 
 interface Organisation {
@@ -46,13 +47,16 @@ interface TeamDetail {
  * Fetches are throttled with delays to avoid flooding the API.
  */
 export function useSearchPrefetch(organisations: readonly Organisation[] | null) {
-  const { register } = useGlobalSearchIndex()
+  const { register } = useGlobalSearchActions()
   const hasFetched = useRef(false)
 
   useEffect(() => {
     if (!organisations || organisations.length === 0) return
     if (hasFetched.current) return
     hasFetched.current = true
+
+    // Skip network prefetch if we already have a valid cached index
+    if (isCacheValid()) return
 
     const controller = new AbortController()
 

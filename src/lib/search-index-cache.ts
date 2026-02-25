@@ -31,6 +31,28 @@ export function loadCachedIndex(): ReadonlyMap<string, SearchableEntity> {
   }
 }
 
+/**
+ * Lightweight check: returns true when a non-expired cache with at least one
+ * entry exists in localStorage. Does NOT deserialise the full entry list so
+ * it is cheap to call during render / effects.
+ */
+export function isCacheValid(): boolean {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    if (!raw) return false
+
+    const parsed: CachedIndex = JSON.parse(raw)
+
+    if (parsed.version !== CACHE_VERSION) return false
+    if (Date.now() - parsed.timestamp > CACHE_MAX_AGE_MS) return false
+    if (!Array.isArray(parsed.entries) || parsed.entries.length === 0) return false
+
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function saveCachedIndex(entities: ReadonlyMap<string, SearchableEntity>): void {
   try {
     const payload: CachedIndex = {
