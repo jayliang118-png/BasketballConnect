@@ -55,6 +55,7 @@ function makeNotificationValue(
   return {
     state: { notifications: [], isHydrated: true },
     addNotification: jest.fn(),
+    markAsRead: jest.fn(),
     clearAll: jest.fn(),
     unreadCount: 0,
     isHydrated: true,

@@ -10,6 +10,7 @@ const INITIAL_STATE: NotificationsState = { notifications: [], isHydrated: false
 export interface NotificationContextValue {
   readonly state: NotificationsState
   readonly addNotification: (notification: Omit<Notification, 'id' | 'expiresAt' | 'read'>) => void
+  readonly markAsRead: (id: string) => void
   readonly clearAll: () => void
   readonly unreadCount: number
   readonly isHydrated: boolean
@@ -72,6 +73,15 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     [],
   )
 
+  const markAsRead = useCallback((id: string) => {
+    setState((prev) => ({
+      ...prev,
+      notifications: prev.notifications.map((n) =>
+        n.id === id ? { ...n, read: true } : n
+      ),
+    }))
+  }, [])
+
   const clearAll = useCallback(() => {
     setState((prev) => ({ ...prev, notifications: [] }))
   }, [])
@@ -84,11 +94,12 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     () => ({
       state,
       addNotification,
+      markAsRead,
       clearAll,
       unreadCount,
       isHydrated,
     }),
-    [state, addNotification, clearAll, unreadCount, isHydrated],
+    [state, addNotification, markAsRead, clearAll, unreadCount, isHydrated],
   )
 
   return (
