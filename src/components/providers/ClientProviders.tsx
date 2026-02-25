@@ -8,6 +8,12 @@ import { NotificationProvider } from '@/context/NotificationContext'
 import { ChatProvider } from '@/context/ChatContext'
 import { BreadcrumbNamesProvider } from '@/context/BreadcrumbNamesContext'
 import { NavigationProvider } from '@/context/NavigationContext'
+import { useNotificationPoller } from '@/hooks/use-notification-poller'
+
+function NotificationPoller() {
+  useNotificationPoller()
+  return null
+}
 
 interface ClientProvidersProps {
   readonly children: React.ReactNode
@@ -20,6 +26,7 @@ export function ClientProviders({ children }: ClientProvidersProps) {
         <GlobalSearchIndexProvider>
           <FavoritesProvider>
             <NotificationProvider>
+              <NotificationPoller />
               <ChatProvider>
                 <NavigationProvider>
                   <BreadcrumbNamesProvider>{children}</BreadcrumbNamesProvider>
