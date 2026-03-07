@@ -40,6 +40,11 @@ export function PlayerProfileView({ player, urlPlayerId, competitionUniqueKey }:
   const playerId = String(userId ?? player.id)
   const fullName = `${firstName} ${lastName}`.trim()
 
+  // Build favorite URL with competition context if available
+  const favoriteUrl = competitionUniqueKey
+    ? `${pathname}?compKey=${competitionUniqueKey}`
+    : pathname
+
   const competitions = useMemo<readonly ProfileCompetition[]>(() => {
     const raw = (player.competitions as readonly Record<string, unknown>[]) ?? []
     return raw.map((c) => ({
@@ -85,7 +90,7 @@ export function PlayerProfileView({ player, urlPlayerId, competitionUniqueKey }:
                   type: 'player',
                   id: playerId,
                   name: fullName,
-                  url: pathname,
+                  url: favoriteUrl,
                 })}
               />
             </div>
