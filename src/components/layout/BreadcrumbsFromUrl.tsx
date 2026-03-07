@@ -93,7 +93,7 @@ export function BreadcrumbsFromUrl() {
 
   return (
     <nav
-      className="container mx-auto px-4 py-2 flex items-center gap-2 text-sm overflow-x-auto scrollbar-hide"
+      className="container mx-auto px-4 py-2 flex flex-wrap items-center gap-2 text-sm overflow-x-auto scrollbar-hide"
       aria-label="Breadcrumb"
     >
       {segments.map((segment, index) => {
