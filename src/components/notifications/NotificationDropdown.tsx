@@ -82,7 +82,7 @@ export function NotificationDropdown({ isOpen, onClose }: NotificationDropdownPr
   return (
     <div
       ref={dropdownRef}
-      className="absolute top-full right-0 mt-2 w-80 bg-court-surface border border-court-border rounded-xl shadow-2xl z-50"
+      className="absolute top-full mt-2 w-80 bg-court-surface border border-court-border rounded-xl shadow-2xl z-50 left-1/2 -translate-x-1/2 md:left-auto md:right-0 md:translate-x-0"
       role="menu"
       aria-label="Notifications"
     >
