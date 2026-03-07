@@ -120,13 +120,13 @@ export function BreadcrumbsFromUrl() {
               </svg>
             )}
             {isLast ? (
-              <span className="text-hoop-orange font-medium truncate max-w-[200px]">
+              <span className="text-hoop-orange font-medium md:truncate md:max-w-[200px]">
                 {segment.label}
               </span>
             ) : (
               <Link
                 href={segment.href}
-                className="text-gray-400 hover:text-gray-200 transition-colors truncate max-w-[200px]"
+                className="text-gray-400 hover:text-gray-200 transition-colors md:truncate md:max-w-[200px]"
               >
                 {segment.label}
               </Link>
