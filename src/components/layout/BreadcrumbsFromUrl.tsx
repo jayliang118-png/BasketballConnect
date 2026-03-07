@@ -106,7 +106,7 @@ export function BreadcrumbsFromUrl() {
           >
             {index > 0 && (
               <svg
-                className="w-3 h-3 text-gray-600"
+                className="w-3 h-3 text-gray-600 hidden md:block"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
