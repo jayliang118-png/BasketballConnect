@@ -102,7 +102,7 @@ export function BreadcrumbsFromUrl() {
         return (
           <div
             key={segment.href}
-            className={`flex items-center gap-2 flex-shrink-0${isMiddle ? ' hidden sm:flex' : ''}`}
+            className="flex items-center gap-2 flex-shrink-0"
           >
             {index > 0 && (
               <svg
