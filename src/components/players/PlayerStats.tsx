@@ -283,8 +283,8 @@ function MatchLogMobileCard({
 }
 
 export function PlayerStats({ userId, playerId, competitions, competitionUniqueKey }: PlayerStatsProps) {
-  // Use the competition key from the referring game context, or fall back to first competition
-  const compKey = competitionUniqueKey || competitions[0]?.competitionUniqueKey || ''
+  // Use the competition key from the referring game context, or fall back to latest competition
+  const compKey = competitionUniqueKey || competitions[competitions.length - 1]?.competitionUniqueKey || ''
 
   // Fetch CAREER stats
   const careerFetcher = useMemo(
