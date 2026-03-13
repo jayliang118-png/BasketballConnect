@@ -6,6 +6,10 @@ jest.mock('@/services/team.service', () => ({
   fetchTeams: jest.fn(),
 }))
 
+afterEach(() => {
+  jest.clearAllMocks()
+})
+
 describe('useTeamPlayerCount', () => {
   it('returns player count for matching team', async () => {
     const { fetchTeams } = require('@/services/team.service')
@@ -61,5 +65,18 @@ describe('useTeamPlayerCount', () => {
     await waitFor(() => {
       expect(result.current.error).toBe('Something went wrong. Please try again later.')
     })
+  })
+
+  it('returns null result when parameters are null', () => {
+    const { fetchTeams } = require('@/services/team.service')
+    fetchTeams.mockResolvedValue([])
+
+    const { result } = renderHook(() =>
+      useTeamPlayerCount(null, null, null, null)
+    )
+
+    expect(result.current.data).toBeNull()
+    expect(result.current.isLoading).toBe(false)
+    expect(fetchTeams).not.toHaveBeenCalled()
   })
 })

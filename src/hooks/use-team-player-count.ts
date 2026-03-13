@@ -11,6 +11,16 @@ interface TeamInfo {
 
 type TeamPlayerCountResult = TeamInfo | null
 
+/**
+ * Fetches player count for a specific team from the teams list.
+ * Useful for teams without full GUID details where only player count is available.
+ *
+ * @param competitionId - Competition ID to filter teams by
+ * @param divisionId - Division ID to filter teams by
+ * @param organisationId - Organisation ID to filter teams by
+ * @param teamId - The team ID to find and return player count for
+ * @returns Hook result with team info (id, name, playersCount) or null
+ */
 export function useTeamPlayerCount(
   competitionId: number | null,
   divisionId: number | null,
