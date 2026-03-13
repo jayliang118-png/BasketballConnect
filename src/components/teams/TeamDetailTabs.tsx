@@ -68,7 +68,13 @@ export function TeamDetailTabs({
 
       <div>
         {currentTab === 'roster' && (
-          <TeamRoster teamKey={teamKey} teamName={teamName} />
+          <TeamRoster
+            teamKey={teamKey}
+            teamName={teamName}
+            competitionId={competitionId}
+            divisionId={divisionId}
+            orgKey={orgKey}
+          />
         )}
         {currentTab === 'fixtures' && (
           <TeamFixtures
