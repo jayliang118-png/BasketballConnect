@@ -16,6 +16,16 @@ function buildSegments(
   const parts = pathname.split('/').filter(Boolean)
   const segments: BreadcrumbSegment[] = [{ label: 'Home', href: '/orgs' }]
 
+  // For /games/* routes, add org and comp from context if available
+  if (parts[0] === 'games' && (names.orgName || names.compName)) {
+    if (names.orgName) {
+      segments.push({ label: names.orgName, href: '/orgs' })
+    }
+    if (names.compName) {
+      segments.push({ label: names.compName, href: '/orgs' })
+    }
+  }
+
   let i = 0
   while (i < parts.length) {
     const part = parts[i]
