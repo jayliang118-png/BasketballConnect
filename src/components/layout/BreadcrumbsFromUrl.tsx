@@ -16,16 +16,6 @@ function buildSegments(
   const parts = pathname.split('/').filter(Boolean)
   const segments: BreadcrumbSegment[] = [{ label: 'Home', href: '/orgs' }]
 
-  // For /games/* routes, add org and comp from context if available
-  if (parts[0] === 'games' && (names.orgName || names.compName)) {
-    if (names.orgName) {
-      segments.push({ label: names.orgName, href: '/orgs' })
-    }
-    if (names.compName) {
-      segments.push({ label: names.compName, href: '/orgs' })
-    }
-  }
-
   let i = 0
   while (i < parts.length) {
     const part = parts[i]
@@ -130,13 +120,13 @@ export function BreadcrumbsFromUrl() {
               </svg>
             )}
             {isLast ? (
-              <span className="text-hoop-orange font-medium md:truncate md:max-w-[200px]">
+              <span className="text-hoop-orange font-medium">
                 {segment.label}
               </span>
             ) : (
               <Link
                 href={segment.href}
-                className="text-gray-400 hover:text-gray-200 transition-colors md:truncate md:max-w-[200px]"
+                className="text-gray-400 hover:text-gray-200 transition-colors"
               >
                 {segment.label}
               </Link>
