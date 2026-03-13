@@ -42,10 +42,11 @@ interface FixtureListProps {
   readonly competitionId: number
   readonly divisionId: number
   readonly compKey?: string
+  readonly orgKey?: string
   readonly onMatchClick?: (match: Match) => void
 }
 
-export function FixtureList({ competitionId, divisionId, compKey, onMatchClick }: FixtureListProps) {
+export function FixtureList({ competitionId, divisionId, compKey, orgKey, onMatchClick }: FixtureListProps) {
   const router = useRouter()
   const { data, isLoading, error, refetch } = useFixtures(
     competitionId,
@@ -62,9 +63,10 @@ export function FixtureList({ competitionId, divisionId, compKey, onMatchClick }
       const params = new URLSearchParams()
       if (compKey) params.set('compKey', compKey)
       if (competitionId) params.set('compId', String(competitionId))
+      if (orgKey) params.set('orgKey', orgKey)
       router.push(`/games/${match.id}?${params.toString()}`)
     },
-    [onMatchClick, compKey, competitionId, router],
+    [onMatchClick, compKey, competitionId, orgKey, router],
   )
 
   const groupedRounds = useMemo(

@@ -76,6 +76,7 @@ export function DivisionDetailTabs({
             competitionId={competitionId}
             divisionId={divisionId}
             compKey={compKey}
+            orgKey={orgKey}
           />
         )}
         {currentTab === 'ladder' && (
