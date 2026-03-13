@@ -67,12 +67,12 @@ export function GlobalSearchResultItem({
           d={ENTITY_ICONS[entity.type] ?? ENTITY_ICONS.team}
         />
       </svg>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm truncate">
+      <div className="flex-1">
+        <p className="text-sm break-words">
           {highlightMatch(entity.name, searchTerm)}
         </p>
         {entity.parentLabel && (
-          <p className="text-xs text-gray-500 truncate">{entity.parentLabel}</p>
+          <p className="text-xs text-gray-500 break-words">{entity.parentLabel}</p>
         )}
       </div>
     </button>
