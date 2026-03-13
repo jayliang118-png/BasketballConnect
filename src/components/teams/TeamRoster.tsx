@@ -10,6 +10,8 @@ import { Card } from '@/components/common/Card'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
 import { EmptyState } from '@/components/common/EmptyState'
+import { SimplifiedRoster } from '@/components/teams/SimplifiedRoster'
+import { useTeamPlayerCount } from '@/hooks/use-team-player-count'
 import type { SearchableEntity } from '@/types/global-search'
 
 interface RosterContentProps {
@@ -51,9 +53,18 @@ function RosterContent({ players, onPlayerClick }: RosterContentProps) {
 interface TeamRosterProps {
   readonly teamKey: string
   readonly teamName: string
+  readonly competitionId?: number
+  readonly divisionId?: number
+  readonly orgKey?: string
 }
 
-export function TeamRoster({ teamKey, teamName }: TeamRosterProps) {
+export function TeamRoster({
+  teamKey,
+  teamName,
+  competitionId,
+  divisionId,
+  orgKey,
+}: TeamRosterProps) {
   const router = useRouter()
   const pathname = usePathname()
   const { isFavorite, toggleFavorite, updateFavorite } = useFavorites()
@@ -61,6 +72,20 @@ export function TeamRoster({ teamKey, teamName }: TeamRosterProps) {
   const isRealGuid = !teamKey.startsWith('team-')
   const { data, isLoading, error, refetch } = useTeamDetail(isRealGuid ? teamKey : null)
   const { register } = useGlobalSearchIndex()
+
+  // Fallback for teams without GUID
+  const teamId = !isRealGuid ? parseInt(teamKey.replace('team-', ''), 10) : null
+  const {
+    data: teamInfo,
+    isLoading: isLoadingFallback,
+    error: errorFallback,
+    refetch: refetchFallback,
+  } = useTeamPlayerCount(
+    competitionId ?? null,
+    divisionId ?? null,
+    orgKey ?? null,
+    !Number.isNaN(teamId ?? NaN) ? teamId : null,
+  )
 
   // Auto-update favorite name when data loads
   useEffect(() => {
@@ -117,22 +142,37 @@ export function TeamRoster({ teamKey, teamName }: TeamRosterProps) {
       })
     : undefined
 
-  if (isLoading) return <LoadingSpinner message="Loading roster..." />
-  if (error) return <ErrorMessage message={error} onRetry={refetch} />
-  if (!isRealGuid) {
-    return <EmptyState message="Detailed roster information is not available for this team" icon="team" />
+  if (isRealGuid) {
+    // Full roster flow for teams with GUID
+    if (isLoading) return <LoadingSpinner message="Loading roster..." />
+    if (error) return <ErrorMessage message={error} onRetry={refetch} />
+
+    const players = data?.players ?? []
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          {handleToggleFavorite && (
+            <FavoriteButton isFavorited={isFavorite('team', teamKey)} onToggle={handleToggleFavorite} />
+          )}
+        </div>
+        <RosterContent players={players} onPlayerClick={handlePlayerClick} />
+      </div>
+    )
   }
 
-  const players = data?.players ?? []
+  // Fallback for teams without GUID
+  const handleRetry = () => refetchFallback()
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        {handleToggleFavorite && (
-          <FavoriteButton isFavorited={isFavorite('team', teamKey)} onToggle={handleToggleFavorite} />
-        )}
-      </div>
-      <RosterContent players={players} onPlayerClick={handlePlayerClick} />
+      <SimplifiedRoster
+        teamName={teamName}
+        playersCount={teamInfo?.playersCount}
+        isLoading={isLoadingFallback}
+        error={errorFallback}
+        onRetry={handleRetry}
+      />
     </div>
   )
 }
