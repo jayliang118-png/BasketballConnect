@@ -8,6 +8,7 @@ const ENTITY_TYPE_ORDER: readonly SearchableEntityType[] = [
   'organisation',
   'competition',
   'division',
+  'group',
   'team',
   'player',
 ]
@@ -16,6 +17,7 @@ const ENTITY_TYPE_LABELS: Readonly<Record<SearchableEntityType, string>> = {
   organisation: 'Organisations',
   competition: 'Competitions',
   division: 'Divisions',
+  group: 'Groups',
   team: 'Teams',
   player: 'Players',
 }

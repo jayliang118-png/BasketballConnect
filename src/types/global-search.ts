@@ -4,6 +4,7 @@ export type SearchableEntityType =
   | 'organisation'
   | 'competition'
   | 'division'
+  | 'group'
   | 'team'
   | 'player'
 
