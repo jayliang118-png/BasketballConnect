@@ -114,9 +114,10 @@ export function TeamFixtures({
       const params = new URLSearchParams()
       if (compKey) params.set('compKey', compKey)
       if (competitionId) params.set('compId', String(competitionId))
+      if (orgKey) params.set('orgKey', orgKey)
       router.push(`/games/${match.id}?${params.toString()}`)
     },
-    [router, compKey, competitionId],
+    [router, compKey, competitionId, orgKey],
   )
 
   const setRoundRef = useCallback((index: number, el: HTMLDivElement | null) => {
