@@ -4,9 +4,14 @@ import { useMemo } from 'react'
 import { useApiData, type UseApiDataResult } from './use-api-data'
 import type { GameSummary, ActionLogResponse, GameEvent } from '@/types/game'
 
+interface ApiDataOptions {
+  readonly pollingInterval?: number | null
+}
+
 export function useGameSummary(
   matchId: number | null,
-  competitionUniqueKey: string | null
+  competitionUniqueKey: string | null,
+  options?: ApiDataOptions,
 ): UseApiDataResult<GameSummary> {
   const fetcher = useMemo(
     () =>
@@ -19,12 +24,13 @@ export function useGameSummary(
     [matchId, competitionUniqueKey]
   )
 
-  return useApiData(fetcher, [matchId, competitionUniqueKey])
+  return useApiData(fetcher, [matchId, competitionUniqueKey], options)
 }
 
 export function useActionLog(
   matchId: number | null,
-  competitionId: string | null
+  competitionId: string | null,
+  options?: ApiDataOptions,
 ): UseApiDataResult<ActionLogResponse> {
   const fetcher = useMemo(
     () =>
@@ -37,11 +43,12 @@ export function useActionLog(
     [matchId, competitionId]
   )
 
-  return useApiData(fetcher, [matchId, competitionId])
+  return useApiData(fetcher, [matchId, competitionId], options)
 }
 
 export function useGameEvents(
-  matchId: number | null
+  matchId: number | null,
+  options?: ApiDataOptions,
 ): UseApiDataResult<readonly GameEvent[]> {
   const fetcher = useMemo(
     () =>
@@ -54,12 +61,13 @@ export function useGameEvents(
     [matchId]
   )
 
-  return useApiData(fetcher, [matchId])
+  return useApiData(fetcher, [matchId], options)
 }
 
 export function useScoringByPlayer(
   competitionId: number | null,
   matchId: number | null,
+  options?: ApiDataOptions,
 ): UseApiDataResult<readonly Record<string, unknown>[]> {
   const fetcher = useMemo(
     () =>
@@ -72,5 +80,5 @@ export function useScoringByPlayer(
     [competitionId, matchId]
   )
 
-  return useApiData(fetcher, [competitionId, matchId])
+  return useApiData(fetcher, [competitionId, matchId], options)
 }

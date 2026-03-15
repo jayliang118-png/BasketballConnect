@@ -1,8 +1,10 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useGameSummary, useScoringByPlayer } from '@/hooks/use-game'
+import { useConditionalPolling } from '@/hooks/use-conditional-polling'
+import { LiveIndicator } from './LiveIndicator'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -211,8 +213,23 @@ function buildTeamRosters(data: GameSummaryType) {
 }
 
 export function GameSummary({ matchId, competitionUniqueKey, competitionId }: GameSummaryProps) {
-  const { data, isLoading, error, refetch } = useGameSummary(matchId, competitionUniqueKey)
-  const { data: scoringRows } = useScoringByPlayer(competitionId, matchId)
+  const [statusForPolling, setStatusForPolling] = useState<string | null>(null)
+
+  const { data, isLoading, error, refetch } = useGameSummary(
+    matchId,
+    competitionUniqueKey,
+    { pollingInterval: useConditionalPolling(statusForPolling) }
+  )
+  const { data: scoringRows } = useScoringByPlayer(competitionId, matchId, {
+    pollingInterval: useConditionalPolling(statusForPolling),
+  })
+
+  // Update polling trigger when game status changes
+  useEffect(() => {
+    if (data?.matchData.matchStatus) {
+      setStatusForPolling(data.matchData.matchStatus)
+    }
+  }, [data?.matchData.matchStatus])
 
   const rosters = useMemo(() => {
     if (!data) return null
@@ -234,10 +251,15 @@ export function GameSummary({ matchId, competitionUniqueKey, competitionId }: Ga
   return (
     <div className="space-y-6">
       {/* Match info */}
-      <div className="card-basketball p-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400">
-        <span className={`font-semibold uppercase ${matchData.matchStatus === 'LIVE' ? 'text-stat-red' : 'text-stat-green'}`}>
-          {getStatusLabel(matchData.matchStatus)}
-        </span>
+      <div className="card-basketball p-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-400">
+        <div className="flex items-center gap-2">
+          <span className={`font-semibold uppercase ${matchData.matchStatus === 'LIVE' ? 'text-stat-red' : 'text-stat-green'}`}>
+            {getStatusLabel(matchData.matchStatus)}
+          </span>
+          {matchData.matchStatus === 'LIVE' && (
+            <LiveIndicator />
+          )}
+        </div>
         {matchData.competitionName && <span>{matchData.competitionName}</span>}
         {matchData.startTime && <span>{formatDate(matchData.startTime)}</span>}
         {matchData.venueName && (

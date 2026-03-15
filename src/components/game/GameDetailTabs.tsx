@@ -5,6 +5,8 @@ import { useRouter, usePathname } from 'next/navigation'
 import { GameSummary } from './GameSummary'
 import { ActionLog } from './ActionLog'
 import { GameEvents } from './GameEvents'
+import { LiveGameBanner } from './LiveGameBanner'
+import { GameDetailHeader } from './GameDetailHeader'
 
 type TabType = 'summary' | 'actionlog' | 'events'
 
@@ -45,7 +47,9 @@ export function GameDetailTabs({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold text-gray-100">Game Detail</h2>
+      <GameDetailHeader matchId={matchId} competitionUniqueKey={competitionUniqueKey} />
+
+      <LiveGameBanner matchId={matchId} competitionUniqueKey={competitionUniqueKey} />
 
       <div className="flex gap-1 bg-court-surface rounded-lg p-1 overflow-x-auto">
         {TABS.map((tab) => (
@@ -69,10 +73,14 @@ export function GameDetailTabs({
           <GameSummary matchId={matchId} competitionUniqueKey={competitionUniqueKey} competitionId={competitionId} />
         )}
         {currentTab === 'actionlog' && (
-          <ActionLog matchId={matchId} competitionId={competitionUniqueKey} />
+          <ActionLog
+            matchId={matchId}
+            competitionId={competitionUniqueKey}
+            competitionUniqueKey={competitionUniqueKey}
+          />
         )}
         {currentTab === 'events' && (
-          <GameEvents matchId={matchId} />
+          <GameEvents matchId={matchId} competitionUniqueKey={competitionUniqueKey} />
         )}
       </div>
     </div>

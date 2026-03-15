@@ -4,9 +4,14 @@ import { useMemo } from 'react'
 import { useApiData, type UseApiDataResult } from './use-api-data'
 import type { Round } from '@/types/fixture'
 
+interface ApiDataOptions {
+  readonly pollingInterval?: number | null
+}
+
 export function useFixtures(
   competitionId: number | null,
-  divisionId: number | null
+  divisionId: number | null,
+  options?: ApiDataOptions,
 ): UseApiDataResult<readonly Round[]> {
   const fetcher = useMemo(
     () =>
@@ -19,5 +24,5 @@ export function useFixtures(
     [competitionId, divisionId]
   )
 
-  return useApiData(fetcher, [competitionId, divisionId])
+  return useApiData(fetcher, [competitionId, divisionId], options)
 }

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useActionLog, useGameEvents } from '@/hooks/use-game'
+import { useActionLog, useGameEvents, useGameSummary } from '@/hooks/use-game'
+import { useConditionalPolling } from '@/hooks/use-conditional-polling'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -10,6 +11,7 @@ import type { GameEvent } from '@/types/game'
 interface ActionLogProps {
   readonly matchId: number | null
   readonly competitionId: string | null
+  readonly competitionUniqueKey?: string | null
 }
 
 function getPeriodFilterLabel(periodId: number): string {
@@ -108,10 +110,15 @@ function TimelineEvent({ event, isTeam1 }: TimelineEventProps) {
   )
 }
 
-export function ActionLog({ matchId, competitionId }: ActionLogProps) {
+export function ActionLog({ matchId, competitionId, competitionUniqueKey }: ActionLogProps) {
   const [activePeriod, setActivePeriod] = useState<number | null>(null)
-  const actionLog = useActionLog(matchId, competitionId)
-  const eventsResult = useGameEvents(matchId)
+
+  // Get game status to determine polling interval
+  const { data: gameSummary } = useGameSummary(matchId, competitionUniqueKey ?? null)
+  const pollingInterval = useConditionalPolling(gameSummary?.matchData.matchStatus)
+
+  const actionLog = useActionLog(matchId, competitionId, { pollingInterval })
+  const eventsResult = useGameEvents(matchId, { pollingInterval })
 
   const isLoading = actionLog.isLoading || eventsResult.isLoading
   const error = actionLog.error || eventsResult.error

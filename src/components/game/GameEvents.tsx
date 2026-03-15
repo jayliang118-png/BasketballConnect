@@ -1,6 +1,7 @@
 'use client'
 
-import { useGameEvents } from '@/hooks/use-game'
+import { useGameEvents, useGameSummary } from '@/hooks/use-game'
+import { useConditionalPolling } from '@/hooks/use-conditional-polling'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorMessage } from '@/components/common/ErrorMessage'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -8,6 +9,7 @@ import type { GameEvent } from '@/types/game'
 
 interface GameEventsProps {
   readonly matchId: number | null
+  readonly competitionUniqueKey?: string | null
 }
 
 function getPeriodLabel(periodId: number): string {
@@ -51,8 +53,12 @@ function groupByPeriod(events: readonly GameEvent[]): Map<number, GameEvent[]> {
   return map
 }
 
-export function GameEvents({ matchId }: GameEventsProps) {
-  const { data, isLoading, error, refetch } = useGameEvents(matchId)
+export function GameEvents({ matchId, competitionUniqueKey }: GameEventsProps) {
+  // Get game status to determine polling interval
+  const { data: gameSummary } = useGameSummary(matchId, competitionUniqueKey ?? null)
+  const pollingInterval = useConditionalPolling(gameSummary?.matchData.matchStatus)
+
+  const { data, isLoading, error, refetch } = useGameEvents(matchId, { pollingInterval })
 
   if (isLoading) return <LoadingSpinner message="Loading events..." />
   if (error) return <ErrorMessage message={error} onRetry={refetch} />

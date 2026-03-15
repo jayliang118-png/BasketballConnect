@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFixtures } from '@/hooks/use-fixtures'
+import { useConditionalPolling } from '@/hooks/use-conditional-polling'
 import { groupRoundsByName, type GroupedRound } from '@/components/fixtures/FixtureList'
 import { RoundAccordion } from '@/components/fixtures/RoundAccordion'
 import { MatchCard } from '@/components/fixtures/MatchCard'
@@ -33,6 +34,14 @@ function findNextRoundIndex(rounds: readonly GroupedRound[]): number {
       return new Date(m.startTime).getTime() > now
     })
     if (hasUpcoming) return i
+  }
+  return -1
+}
+
+function findLiveRoundIndex(rounds: readonly GroupedRound[]): number {
+  for (let i = 0; i < rounds.length; i++) {
+    const hasLive = rounds[i].matches.some((m) => m.matchStatus === 'LIVE')
+    if (hasLive) return i
   }
   return -1
 }
@@ -69,9 +78,11 @@ export function TeamFixtures({
   const router = useRouter()
   const roundRefs = useRef<Map<number, HTMLDivElement>>(new Map())
 
+  // Poll every 5 seconds to detect live games
   const { data, isLoading, error, refetch } = useFixtures(
     competitionId,
     divisionId,
+    { pollingInterval: 5000 },
   )
 
   const groupedRounds = useMemo(() => {
@@ -82,31 +93,45 @@ export function TeamFixtures({
     return []
   }, [data, teamName])
 
+  // Check for live games first, then fall back to next round
+  const liveRoundIndex = useMemo(() => findLiveRoundIndex(groupedRounds), [groupedRounds])
   const nextRoundIndex = useMemo(() => findNextRoundIndex(groupedRounds), [groupedRounds])
 
-  const nextMatch = useMemo(() => {
-    if (nextRoundIndex < 0) return null
+  // Show live round if available, otherwise show next round
+  const displayRoundIndex = liveRoundIndex >= 0 ? liveRoundIndex : nextRoundIndex
+  const isShowingLive = liveRoundIndex >= 0
+
+  const displayMatch = useMemo(() => {
+    if (displayRoundIndex < 0) return null
     const now = Date.now()
-    const upcoming = groupedRounds[nextRoundIndex].matches
-      .filter((m) => m.startTime && new Date(m.startTime).getTime() > now)
-      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-    return upcoming[0] ?? null
-  }, [groupedRounds, nextRoundIndex])
+    const roundMatches = groupedRounds[displayRoundIndex].matches
+
+    if (isShowingLive) {
+      // For live round, show first live game
+      return roundMatches.find((m) => m.matchStatus === 'LIVE') ?? roundMatches[0] ?? null
+    } else {
+      // For next round, show first upcoming game
+      const upcoming = roundMatches
+        .filter((m) => m.startTime && new Date(m.startTime).getTime() > now)
+        .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+      return upcoming[0] ?? null
+    }
+  }, [groupedRounds, displayRoundIndex, isShowingLive])
 
   const handleScrollToRound = useCallback(() => {
-    if (nextRoundIndex < 0) return
-    const el = roundRefs.current.get(nextRoundIndex)
+    if (displayRoundIndex < 0) return
+    const el = roundRefs.current.get(displayRoundIndex)
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [nextRoundIndex])
+  }, [displayRoundIndex])
 
   useEffect(() => {
-    if (nextRoundIndex < 0) return
+    if (displayRoundIndex < 0) return
     const timeout = setTimeout(() => {
-      const el = roundRefs.current.get(nextRoundIndex)
+      const el = roundRefs.current.get(displayRoundIndex)
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 100)
     return () => clearTimeout(timeout)
-  }, [nextRoundIndex])
+  }, [displayRoundIndex])
 
   const handleMatchClick = useCallback(
     (match: Match) => {
@@ -133,23 +158,37 @@ export function TeamFixtures({
 
   return (
     <div className="space-y-3">
-      {nextRoundIndex >= 0 && nextMatch && (
+      {displayRoundIndex >= 0 && displayMatch && (
         <button
           onClick={handleScrollToRound}
           type="button"
-          className="w-full card-basketball p-4 flex items-center gap-3 border border-hoop-orange/30 bg-hoop-orange/5 hover:bg-hoop-orange/10 transition-colors text-left"
+          className={`w-full card-basketball p-4 flex items-center gap-3 border transition-colors text-left ${
+            isShowingLive
+              ? 'border-stat-red/30 bg-stat-red/5 hover:bg-stat-red/10'
+              : 'border-hoop-orange/30 bg-hoop-orange/5 hover:bg-hoop-orange/10'
+          }`}
         >
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-hoop-orange/20 flex items-center justify-center">
-            <svg className="w-4 h-4 text-hoop-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+            isShowingLive ? 'bg-stat-red/20' : 'bg-hoop-orange/20'
+          }`}>
+            {isShowingLive ? (
+              <span className="w-3 h-3 bg-stat-red rounded-full animate-pulse" />
+            ) : (
+              <svg className="w-4 h-4 text-hoop-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-hoop-orange uppercase tracking-wide">Next Game</p>
+            <p className={`text-xs font-semibold uppercase tracking-wide ${
+              isShowingLive ? 'text-stat-red' : 'text-hoop-orange'
+            }`}>
+              {isShowingLive ? 'Live Game' : 'Next Game'}
+            </p>
             <p className="text-sm text-gray-200 mt-0.5">
-              {groupedRounds[nextRoundIndex].name}
-              {nextMatch.startTime && (
-                <span className="text-gray-400"> &mdash; {formatNextMatchDate(nextMatch.startTime)}</span>
+              {groupedRounds[displayRoundIndex].name}
+              {displayMatch.startTime && (
+                <span className="text-gray-400"> &mdash; {formatNextMatchDate(displayMatch.startTime)}</span>
               )}
             </p>
           </div>
@@ -164,7 +203,7 @@ export function TeamFixtures({
           <RoundAccordion
             roundName={round.name}
             matchCount={round.matches.length}
-            defaultOpen={index === nextRoundIndex || (nextRoundIndex < 0 && index === groupedRounds.length - 1)}
+            defaultOpen={index === displayRoundIndex || (displayRoundIndex < 0 && index === groupedRounds.length - 1)}
           >
             {round.matches.map((match, mIdx) => (
               <MatchCard
