@@ -75,7 +75,7 @@ async function dispatchFunction(
 
     case 'get_fixtures':
       return fetchFixtures(
-        args.competitionId as number,
+        args.competitionKey as string,
         args.divisionId as number,
       )
 

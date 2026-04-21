@@ -125,16 +125,16 @@ export const CHAT_TOOLS: readonly ChatCompletionTool[] = [
       parameters: {
         type: 'object',
         properties: {
-          competitionId: {
-            type: 'number',
-            description: 'The numeric competition ID',
+          competitionKey: {
+            type: 'string',
+            description: 'The competition unique key (GUID)',
           },
           divisionId: {
             type: 'number',
             description: 'The numeric division ID',
           },
         },
-        required: ['competitionId', 'divisionId'],
+        required: ['competitionKey', 'divisionId'],
       },
     },
   },

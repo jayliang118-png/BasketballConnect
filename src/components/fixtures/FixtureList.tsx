@@ -49,7 +49,7 @@ interface FixtureListProps {
 export function FixtureList({ competitionId, divisionId, compKey, orgKey, onMatchClick }: FixtureListProps) {
   const router = useRouter()
   const { data, isLoading, error, refetch } = useFixtures(
-    competitionId,
+    compKey ?? null,
     divisionId,
   )
 

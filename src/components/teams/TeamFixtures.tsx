@@ -61,6 +61,7 @@ function formatNextMatchDate(iso: string): string {
 interface TeamFixturesProps {
   readonly competitionId: number
   readonly divisionId: number
+  readonly teamId: number | null
   readonly teamName: string
   readonly teamKey: string
   readonly orgKey: string
@@ -70,6 +71,7 @@ interface TeamFixturesProps {
 export function TeamFixtures({
   competitionId,
   divisionId,
+  teamId,
   teamName,
   teamKey,
   orgKey,
@@ -78,20 +80,27 @@ export function TeamFixtures({
   const router = useRouter()
   const roundRefs = useRef<Map<number, HTMLDivElement>>(new Map())
 
-  // Poll every 5 seconds to detect live games
+  // Memoize array parameters to prevent infinite re-fetching
+  const teamIdsFilter = useMemo(() => (teamId ? [teamId] : undefined), [teamId])
+  const ignoreStatusesFilter = useMemo(() => [1], [])
+
+  // Poll every 5 seconds to detect live games, filter by team
   const { data, isLoading, error, refetch } = useFixtures(
     competitionId,
     divisionId,
-    { pollingInterval: 5000 },
+    {
+      pollingInterval: 5000,
+      teamIds: teamIdsFilter,
+      ignoreStatuses: ignoreStatusesFilter,
+    },
   )
 
   const groupedRounds = useMemo(() => {
     if (!data || !Array.isArray(data)) return []
-    if (teamName) {
-      return groupRoundsByName(filterRoundsByTeamName(data, teamName))
-    }
-    return []
-  }, [data, teamName])
+    // API already filtered by teamId, but fallback to client-side filter if needed
+    const filtered = teamId ? data : filterRoundsByTeamName(data, teamName)
+    return groupRoundsByName(filtered)
+  }, [data, teamId, teamName])
 
   // Check for live games first, then fall back to next round
   const liveRoundIndex = useMemo(() => findLiveRoundIndex(groupedRounds), [groupedRounds])

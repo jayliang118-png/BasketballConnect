@@ -21,10 +21,8 @@ async function resolveTeam(
   orgKey: string,
   compKey: string,
   divisionId: number,
-): Promise<{ name: string; teamUniqueKey: string | null }> {
-  const comp = await getCompetitionByKey(orgKey, compKey)
-  if (!comp) return { name: teamKey, teamUniqueKey: teamKey.startsWith('team-') ? null : teamKey }
-  return resolveTeamFromList(comp.id, divisionId, orgKey, teamKey)
+): Promise<{ id: number | null; name: string; teamUniqueKey: string | null }> {
+  return resolveTeamFromList(compKey, divisionId, orgKey, teamKey)
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -68,6 +66,7 @@ export default async function TeamDetailPage({ params, searchParams }: Props) {
       <TeamDetailTabs
         activeTab={tab ?? ((team.teamUniqueKey ?? teamKey).startsWith('team-') ? 'fixtures' : 'roster')}
         teamKey={team.teamUniqueKey ?? teamKey}
+        teamId={team.id}
         teamName={team.name}
         competitionId={competitionId}
         divisionId={divisionId}

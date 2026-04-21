@@ -15,6 +15,7 @@ const TABS: readonly { readonly key: TabType; readonly label: string }[] = [
 interface TeamDetailTabsProps {
   readonly activeTab: string
   readonly teamKey: string
+  readonly teamId: number | null
   readonly teamName: string
   readonly competitionId: number
   readonly divisionId: number
@@ -25,6 +26,7 @@ interface TeamDetailTabsProps {
 export function TeamDetailTabs({
   activeTab,
   teamKey,
+  teamId,
   teamName,
   competitionId,
   divisionId,
@@ -80,6 +82,7 @@ export function TeamDetailTabs({
           <TeamFixtures
             competitionId={competitionId}
             divisionId={divisionId}
+            teamId={teamId}
             teamName={teamName}
             teamKey={teamKey}
             orgKey={orgKey}

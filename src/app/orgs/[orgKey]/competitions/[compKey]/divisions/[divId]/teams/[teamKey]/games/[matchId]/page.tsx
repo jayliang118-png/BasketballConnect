@@ -60,7 +60,7 @@ export default async function GameDetailPage({ params, searchParams }: Props) {
   const competitionId = comp?.id ?? 0
 
   const [team, gameName] = await Promise.all([
-    resolveTeamFromList(competitionId, divisionId, orgKey, teamKey),
+    resolveTeamFromList(compKey, divisionId, orgKey, teamKey),
     getGameName(matchIdNum, compKey),
   ])
 
