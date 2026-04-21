@@ -53,7 +53,7 @@ function RosterContent({ players, onPlayerClick }: RosterContentProps) {
 interface TeamRosterProps {
   readonly teamKey: string
   readonly teamName: string
-  readonly competitionId?: number
+  readonly compKey?: string
   readonly divisionId?: number
   readonly orgKey?: string
 }
@@ -61,7 +61,7 @@ interface TeamRosterProps {
 export function TeamRoster({
   teamKey,
   teamName,
-  competitionId,
+  compKey,
   divisionId,
   orgKey,
 }: TeamRosterProps) {
@@ -81,7 +81,7 @@ export function TeamRoster({
     error: errorFallback,
     refetch: refetchFallback,
   } = useTeamPlayerCount(
-    competitionId ?? null,
+    compKey ?? null,
     divisionId ?? null,
     orgKey ?? null,
     !Number.isNaN(teamId ?? NaN) ? teamId : null,

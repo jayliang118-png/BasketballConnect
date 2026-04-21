@@ -51,7 +51,19 @@ export function useApiData<T>(
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          const message = 'Something went wrong. Please try again later.'
+          let message = 'Something went wrong. Please try again later.'
+
+          if (err instanceof Error) {
+            // Check for specific API errors
+            if (err.message.includes('403')) {
+              message = 'Access denied. You may not have permission to view this content.'
+            } else if (err.message.includes('404')) {
+              message = 'The requested data could not be found.'
+            } else if (err.message.includes('500') || err.message.includes('502')) {
+              message = 'Server error. Please try again later.'
+            }
+          }
+
           setError(message)
           setIsLoading(false)
         }

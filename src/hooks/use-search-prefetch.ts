@@ -165,7 +165,7 @@ async function prefetchAll(
             if (!div.id) continue
 
             try {
-              const rawTeams = await fetchTeams(comp.id, div.id, org.organisationUniqueKey)
+              const rawTeams = await fetchTeams(comp.uniqueKey, div.id, org.organisationUniqueKey)
               const teams = extractArray(rawTeams) as readonly Team[]
 
               if (signal.aborted) return

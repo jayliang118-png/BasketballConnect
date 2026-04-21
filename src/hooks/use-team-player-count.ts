@@ -22,17 +22,17 @@ type TeamPlayerCountResult = TeamInfo | null
  * @returns Hook result with team info (id, name, playersCount) or null
  */
 export function useTeamPlayerCount(
-  competitionId: number | null,
+  competitionKey: string | null,
   divisionId: number | null,
   organisationId: string | null,
   teamId: number | null,
 ): UseApiDataResult<TeamPlayerCountResult> {
   const fetcher = useMemo(
     () =>
-      competitionId && divisionId && organisationId && teamId
+      competitionKey && divisionId && organisationId && teamId
         ? async () => {
             const { fetchTeams } = await import('@/services/team.service')
-            const teams = (await fetchTeams(competitionId, divisionId, organisationId)) as Array<{
+            const teams = (await fetchTeams(competitionKey, divisionId, organisationId)) as Array<{
               id: number
               name: string
               playersCount: string
@@ -41,8 +41,8 @@ export function useTeamPlayerCount(
             return team ?? null
           }
         : null,
-    [competitionId, divisionId, organisationId, teamId],
+    [competitionKey, divisionId, organisationId, teamId],
   )
 
-  return useApiData(fetcher, [competitionId, divisionId, organisationId, teamId])
+  return useApiData(fetcher, [competitionKey, divisionId, organisationId, teamId])
 }

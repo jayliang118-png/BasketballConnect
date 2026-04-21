@@ -18,7 +18,7 @@ interface TeamListProps {
 
 export function TeamList({ competitionId, divisionId, orgKey, compKey }: TeamListProps) {
   const { data, isLoading, error, refetch } = useTeams(
-    competitionId,
+    compKey,
     divisionId,
     orgKey,
   )

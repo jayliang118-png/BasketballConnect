@@ -71,7 +71,7 @@ export function TeamDetailTabs({
           <TeamRoster
             teamKey={teamKey}
             teamName={teamName}
-            competitionId={competitionId}
+            compKey={compKey}
             divisionId={divisionId}
             orgKey={orgKey}
           />

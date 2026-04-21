@@ -3,6 +3,7 @@ import { getDivisionName } from '@/data/divisions'
 import { getOrganisationName } from '@/data/organisations'
 import { DivisionDetailTabs } from '@/components/divisions/DivisionDetailTabs'
 import { BreadcrumbNameSetter } from '@/components/layout/BreadcrumbNameSetter'
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 interface Props {
@@ -36,7 +37,11 @@ export default async function DivisionDetailPage({ params, searchParams }: Props
     getDivisionName(compKey, divisionId),
   ])
 
-  const competitionId = comp?.id ?? 0
+  if (!comp) {
+    notFound()
+  }
+
+  const competitionId = comp.id
 
   return (
     <main className="container mx-auto px-4 py-6 flex-1">

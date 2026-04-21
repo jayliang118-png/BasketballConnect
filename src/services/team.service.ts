@@ -10,16 +10,17 @@ const client = createApiClient(config.apiBaseUrl)
 
 /**
  * Fetches teams for a given competition and division.
- * GET /livescores/teams/list?competitionId=X&divisionId=X&organisationId=X&includeBye=0
+ * GET /livescores/teams/enduser/list?competitionId=UUID&divisionId=X&organisationId=X&includeBye=0
+ * Note: competitionId should be the competition's uniqueKey (UUID), not the numeric ID
  */
 export async function fetchTeams(
-  competitionId: number,
+  competitionKey: string,
   divisionId: number,
   organisationId: string,
 ): Promise<unknown> {
   try {
-    const data = await client.get('/livescores/teams/list', {
-      competitionId,
+    const data = await client.get('/livescores/teams/enduser/list', {
+      competitionId: competitionKey,
       divisionId,
       organisationId,
       includeBye: 0,

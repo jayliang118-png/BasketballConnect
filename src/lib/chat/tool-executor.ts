@@ -62,7 +62,7 @@ async function dispatchFunction(
 
     case 'get_teams':
       return fetchTeams(
-        args.competitionId as number,
+        args.competitionKey as string,
         args.divisionId as number,
         args.organisationId as string,
       )

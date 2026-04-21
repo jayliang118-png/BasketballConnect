@@ -64,11 +64,14 @@ export function createApiClient(baseUrl: string, token?: string): ApiClient {
 
     if (!response.ok) {
       const body = await response.text()
-      throw new ApiError(
+      const error = new ApiError(
         `API request failed: ${response.status} ${response.statusText} for ${path}`,
         response.status,
         body,
       )
+      // Preserve status in error message for better error handling
+      error.message = `${response.status}: ${error.message}`
+      throw error
     }
 
     const data = await response.json() as T
