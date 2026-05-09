@@ -24,14 +24,21 @@ export async function GET(
       headers: {
         Authorization: serverConfig.apiToken,
         'Content-Type': 'application/json',
+        'User-Agent': 'BasketballConnect/1.0',
       },
     })
 
     if (!response.ok) {
       const body = await response.text()
+      // Log full error for debugging
+      console.error(`[API Proxy] ${response.status} for ${apiPath}:`, body)
       return NextResponse.json(
-        { error: `Upstream API error: ${response.status}` },
-        { status: response.status, headers: { 'x-upstream-body': body.slice(0, 200) } },
+        {
+          error: `Upstream API error: ${response.status}`,
+          path: apiPath,
+          detail: body.slice(0, 500)
+        },
+        { status: response.status },
       )
     }
 

@@ -44,6 +44,7 @@ export async function serverFetch<T>(
     headers: {
       Authorization: serverConfig.apiToken,
       'Content-Type': 'application/json',
+      'User-Agent': 'BasketballConnect/1.0',
     },
   }
 
