@@ -25,6 +25,7 @@ export async function GET(
         Authorization: serverConfig.apiToken,
         'Content-Type': 'application/json',
         'User-Agent': 'BasketballConnect/1.0',
+        'ngrok-skip-browser-warning': 'true',
       },
     })
 
