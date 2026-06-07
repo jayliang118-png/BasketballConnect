@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { ClientProviders } from '@/components/providers/ClientProviders'
+
+// Data source (Squadi API via ngrok proxy) is only available at runtime.
+// Build-time prerendering cannot reach the local tunnel.
+export const dynamic = 'force-dynamic'
 import { Header } from '@/components/layout/Header'
 import { BreadcrumbsFromUrl } from '@/components/layout/BreadcrumbsFromUrl'
 import { Footer } from '@/components/layout/Footer'
