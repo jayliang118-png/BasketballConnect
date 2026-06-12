@@ -26,6 +26,8 @@
 # misc
 .DS_Store
 *.pem
+3000
+ecosystem.config.js
 
 # debug
 npm-debug.log*
