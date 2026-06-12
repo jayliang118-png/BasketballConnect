@@ -12,14 +12,14 @@ npm run lint             # ESLint (flat config, extends eslint-config-next)
 
 npm test                 # Run Jest unit + integration tests (jsdom)
 npm run test:watch       # Jest watch mode
-npm run test:coverage    # Jest with coverage — threshold 80% branches/functions/lines/statements
+npm run test:coverage    # Jest with coverage — 80% threshold on all four metrics (branches/functions/lines/statements)
 npx jest path/to/file.test.ts                  # Run a single test file
 npx jest -t "test name substring"              # Run tests matching a name
 
 npx playwright test tests/basketball-hub.spec.ts    # Playwright E2E (tests live in /tests, NOT /src)
 ```
 
-Jest is configured to ignore `/src/__tests__/e2e/` and `/tests/` — Playwright specs in `/tests/` must be run via `npx playwright test`, not Jest.
+Jest is configured to ignore `/src/__tests__/e2e/` and `/src/__tests__/setup.ts`. There is no `playwright.config.ts` — Playwright runs with defaults. Playwright specs in `/tests/` must be run via `npx playwright test`, not Jest.
 
 ## Environment
 
@@ -29,6 +29,8 @@ Two sets of env vars, read from different modules — do not mix them:
 - **Client-safe** (`src/lib/config.ts`): `NEXT_PUBLIC_API_BASE_URL` (defaults to `/api/basketball`, the internal proxy path).
 
 `getServerConfig()` is lazy-cached — prefer it over the deprecated eager `serverConfig` proxy when writing new server code. The proxy exists for backwards compatibility and will fail at module load if env vars are missing.
+
+`.env.example` is the canonical reference for required environment variables. Some local `.env` files may contain legacy `NEXT_PUBLIC_SQUADI_*` vars that are no longer read by any code — these are safe to remove.
 
 ## Architecture
 
@@ -54,7 +56,7 @@ src/
   schemas/             Zod schemas for all Squadi API responses; barrel in schemas/index.ts
   types/               TS types (often derived from schemas)
   hooks/               React hooks — data fetching, polling, search, favorites, notifications
-  context/             7 Context providers, composed in components/providers/ClientProviders.tsx
+  context/             8 Context providers, composed in components/providers/ClientProviders.tsx
   components/          Feature-grouped UI (teams/, players/, game/, fixtures/, chat/, ...)
   lib/                 Infra: api-client, server-api-client, config, server-config, chat/, etc.
   __tests__/           Jest unit + integration tests mirroring src/ structure
@@ -62,6 +64,10 @@ tests/                 Playwright E2E specs
 ```
 
 Path alias `@/*` → `src/*` (see `tsconfig.json` and `jest.config.ts`).
+
+### Styling
+
+Tailwind CSS v4 is used for all styling. There is no `tailwind.config.ts` — v4 is configured via `@import "tailwindcss"` and an `@theme` block in `src/app/globals.css`, which defines custom basketball-themed design tokens (e.g., `--color-court-dark`, `--color-hoop-orange`, `--color-jersey-blue`). PostCSS (`postcss.config.mjs`) runs the `@tailwindcss/postcss` plugin.
 
 ### Key client patterns
 
@@ -84,4 +90,8 @@ The `/api/chat` route runs a bounded tool-calling loop (max 5 rounds, 60s timeou
 
 ## Planning directory
 
-`.planning/` contains GSD workflow state (`PROJECT.md`, `ROADMAP.md`, `STATE.md`, `phases/`, `research/`). This drives the `/gsd:*` slash commands. Treat these files as project source-of-truth for in-flight milestones, not as generic docs.
+`.planning/` is created on demand by `/gsd:*` slash commands (specifically `/gsd:new-project` or `/gsd:new-milestone`) to store milestone state (`PROJECT.md`, `ROADMAP.md`, `STATE.md`, `phases/`, `research/`). If the directory doesn't exist yet, initializing a project or milestone will scaffold it. Treat these files as project source-of-truth for in-flight milestones, not as generic docs.
+
+## CI/CD
+
+A GitHub Actions workflow (`.github/workflows/deploy.yml`) runs on every push to `main` and on manual dispatch. It installs dependencies, builds, and deploys the static export (`./out`) to GitHub Pages via `actions/deploy-pages`.

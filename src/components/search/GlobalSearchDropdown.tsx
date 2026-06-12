@@ -25,9 +25,9 @@ export function GlobalSearchDropdown({ searchTerm, onClose, containerRef }: Glob
     setHighlightedIndex(-1)
   }, [results])
 
-  // Close on click outside (excluding the search container which holds the input)
+  // Close on click/touch outside (excluding the search container which holds the input)
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
+    function handleClickOutside(e: MouseEvent | TouchEvent) {
       const target = e.target as Node
       const isInsideDropdown = dropdownRef.current?.contains(target)
       const isInsideContainer = containerRef.current?.contains(target)
@@ -36,7 +36,11 @@ export function GlobalSearchDropdown({ searchTerm, onClose, containerRef }: Glob
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside, { passive: true })
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
   }, [onClose, containerRef])
 
   // Flatten results for keyboard navigation

@@ -95,7 +95,7 @@ body {
   border-radius: 0.75rem;
   box-shadow: 0 10px 15px -3px var(--color-card-shadow, rgba(0, 0, 0, 0.3));
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  contain: layout style;
+  /* NOTE: Do NOT add contain: layout here — it breaks touch events on iOS Safari */
 }
 
 @utility card-basketball-hover {
@@ -137,14 +137,15 @@ body {
   }
 }
 
-/* Disable transform animations on small screens to prevent iOS GPU crashes */
+/* Reduce animation jank on small screens to prevent iOS GPU thrashing */
 @media (max-width: 640px) {
-  *,
-  *::before,
-  *::after {
+  .animate-score-pop,
+  .animate-slide-in,
+  .animate-fade-up,
+  .animate-bounce-in,
+  .animate-pulse-glow {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
   }
 }
 
