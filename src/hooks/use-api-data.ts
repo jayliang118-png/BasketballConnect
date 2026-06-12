@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+const POLLING_DISABLED = process.env.NEXT_PUBLIC_DISABLE_POLLING === 'true'
+
 interface UseApiDataOptions {
   readonly pollingInterval?: number | null
 }
@@ -76,7 +78,7 @@ export function useApiData<T>(
   }, [fetchCount, ...deps])
 
   useEffect(() => {
-    if (!pollingInterval || pollingInterval <= 0) return
+    if (POLLING_DISABLED || !pollingInterval || pollingInterval <= 0) return
 
     const poll = () => {
       const fn = fetcherRef.current

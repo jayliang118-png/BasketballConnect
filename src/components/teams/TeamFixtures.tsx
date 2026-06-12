@@ -1,9 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFixtures } from '@/hooks/use-fixtures'
-import { useConditionalPolling } from '@/hooks/use-conditional-polling'
 import { groupRoundsByName, type GroupedRound } from '@/components/fixtures/FixtureList'
 import { RoundAccordion } from '@/components/fixtures/RoundAccordion'
 import { MatchCard } from '@/components/fixtures/MatchCard'
@@ -84,16 +83,27 @@ export function TeamFixtures({
   const teamIdsFilter = useMemo(() => (teamId ? [teamId] : undefined), [teamId])
   const ignoreStatusesFilter = useMemo(() => [1], [])
 
-  // Poll every 5 seconds to detect live games, filter by team
+  // Start without polling; enable 5s polling only when a match is LIVE
+  const [pollingInterval, setPollingInterval] = useState<number | null>(null)
+
   const { data, isLoading, error, refetch } = useFixtures(
     competitionId,
     divisionId,
     {
-      pollingInterval: 5000,
+      pollingInterval,
       teamIds: teamIdsFilter,
       ignoreStatuses: ignoreStatusesFilter,
     },
   )
+
+  // Watch fetched data for live games and toggle polling accordingly
+  useEffect(() => {
+    if (!data || !Array.isArray(data)) return
+    const hasLive = data.some((round: Round) =>
+      round.matches.some((m: Match) => m.matchStatus === 'LIVE'),
+    )
+    setPollingInterval(hasLive ? 5000 : null)
+  }, [data])
 
   const groupedRounds = useMemo(() => {
     if (!data || !Array.isArray(data)) return []

@@ -8,6 +8,7 @@ import { createPollOrchestrator } from '@/lib/notification-poll-orchestrator'
 import { createCompetitionResolver } from '@/lib/competition-resolver'
 
 const DEFAULT_POLL_INTERVAL = 60_000
+const POLLING_DISABLED = process.env.NEXT_PUBLIC_DISABLE_POLLING === 'true'
 
 interface UseNotificationPollerOptions {
   readonly pollingInterval?: number
@@ -68,7 +69,7 @@ export function useNotificationPoller(
   }, [state.items])
 
   useEffect(() => {
-    if (!state.isHydrated || !notifHydrated) return
+    if (POLLING_DISABLED || !state.isHydrated || !notifHydrated) return
 
     const hasTeamFavorites = state.items.some((item) => item.type === 'team')
     if (!hasTeamFavorites) return
